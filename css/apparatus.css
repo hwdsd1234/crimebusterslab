@@ -1,0 +1,26 @@
+.apparatus-wrap { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+
+/* A 220x300 drawing stretched to 420px wide is 573px tall, which buries the bench log
+   below the fold; the cap keeps the station and its log on one screen. */
+.apparatus {
+  width: 100%; max-width: 420px; height: auto; max-height: 330px;
+  background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px;
+}
+
+.apparatus-label { font-size: 11px; fill: var(--ink-soft); font-family: inherit; }
+.apparatus-readout { font-size: 15px; fill: var(--ink); font-weight: 600; font-family: ui-monospace, Consolas, monospace; }
+
+/* spot plate */
+.spotplate-live { max-width: 460px; }
+.well { cursor: pointer; }
+.well:hover circle:first-of-type { stroke-width: 3; }
+.well.selected circle:first-of-type { stroke: var(--accent); stroke-width: 4; }
+.well-label { font-size: 12px; fill: var(--ink-soft); font-weight: 600; }
+.well-tag { font-size: 11px; fill: var(--ink); }
+
+/* microscope */
+.micro-field { max-width: 520px; background: #eef1f4; }
+.reticle text { font-size: 11px; }
+
+/* chromatography */
+.empty-strip + .apparatus { margin-top: .5rem; }
