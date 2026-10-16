@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Crime Busters Virtual Lab</title>
+<link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/bench.css"/>
+<link rel="stylesheet" href="css/apparatus.css"/>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <strong data-i18n="Crime Busters">Crime Busters</strong>
+    <span data-i18n="Virtual Lab · Division B">Virtual Lab · Division B</span>
+  </div>
+
+  <nav class="modes">
+    <button data-mode="sandbox" data-i18n="Sandbox">Sandbox</button>
+    <button data-mode="drill" data-i18n="Drill">Drill</button>
+    <button data-mode="case" data-i18n="New case">New case</button>
+  </nav>
+
+  <div class="topbar-tools">
+    <div class="lang-switch" id="langSwitch">
+      <button data-lang="both">EN+中文</button>
+      <button data-lang="en">EN</button>
+      <button data-lang="zh">中文</button>
+    </div>
+    <input id="seedInput" type="number" inputmode="numeric" data-i18n-placeholder="seed" placeholder="seed"/>
+    <button id="seedCase" class="btn small" data-i18n="Load seed">Load seed</button>
+    <button id="newCase" class="btn small" data-i18n="Random case">Random case</button>
+    <button id="exportCsv" class="btn small" data-i18n="Export log CSV">Export log CSV</button>
+    <div class="score-chip" id="scoreChip">—</div>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="shelf" id="shelf"></aside>
+
+  <section class="stage" id="stage"></section>
+
+  <aside class="sidepanel" id="sidepanel">
+    <div class="panel" id="caseBrief"></div>
+    <div class="panel" id="unknowns"></div>
+    <div class="panel" id="logbook"></div>
+    <div class="panel" id="technique"></div>
+    <div class="panel wide" id="questions"></div>
+  </aside>
+</main>
+
+<footer class="rulebar" data-i18n="Equipment set is the 2026 Division B Chemistry Lab Equipment List. Microscope, heat source, and balance are shown as event-provided — confirm against the current Rules Manual before treating them as team-supplied.">Equipment set is the 2026 Division B Chemistry Lab Equipment List. Microscope, heat source, and balance are shown as event-provided — confirm against the current Rules Manual before treating them as team-supplied.</footer>
+
+<!-- Plain scripts sharing one window.LAB namespace, so the page runs straight off
+     the filesystem with no server. Order matters: each file reads what earlier
+     files put on LAB. -->
+<script>window.LAB = {};</script>
+<script src="js/i18n/zh-ui.js"></script>
+<script src="js/i18n/zh-devices.js"></script>
+<script src="js/i18n/zh-samples.js"></script>
+<script src="js/i18n/zh-bio.js"></script>
+<script src="js/i18n/zh-case.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/data/samples.js"></script>
+<script src="js/data/biology.js"></script>
+<script src="js/data/materials.js"></script>
+<script src="js/data/inks.js"></script>
+<script src="js/data/case-text.js"></script>
+<script src="js/engine/devices.js"></script>
+<script src="js/engine/svg.js"></script>
+<script src="js/engine/model.js"></script>
+<script src="js/engine/state.js"></script>
+<script src="js/engine/scoring.js"></script>
+<script src="js/engine/generator.js"></script>
+<script src="js/ui/stations.js"></script>
+<script src="js/ui/shelf.js"></script>
+<script src="js/ui/panels.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
