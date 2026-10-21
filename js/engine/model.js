@@ -74,13 +74,6 @@ function resolveResult(sample, testId) {
       const action = d > 1 ? 'sinks' : 'floats';
       return { token: `ρ ${d}`, text: `Density ${d} g/cm³ — ${action} in water`, key: 'Density {d} g/cm³ — {action} in water', vars: { d, action } };
     }
-    // Dropping a solid into a beaker of water: the quick density screen before weighing.
-    case 'float': {
-      if (sample.density == null || sample.category === 'clear_liquid') return null;
-      return sample.density < 1
-        ? { token: 'floats', text: 'Floats on the water surface' }
-        : { token: 'sinks', text: 'Sinks to the bottom of the water' };
-    }
     case 'micro':
       return sample.microData
         ? { token: 'microscopic', text: sample.results?.micro?.[1] || sample.appearance }

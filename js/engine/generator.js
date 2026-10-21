@@ -294,7 +294,7 @@ const DRILLS = [
   {
     id: 'measuring', expectation: 4, title: 'Use the measuring instruments',
     goal: 'Read a meniscus at eye level, measure pH without dipping, and test conductivity.',
-    devices: ['graduated_cylinder', 'ph', 'conductivity', 'thermometer', 'ruler'],
+    devices: ['graduated_cylinder', 'ph', 'conductivity', 'balance', 'ruler'],
   },
   {
     id: 'unknown_powder', title: 'Identify four unknown powders',
@@ -303,7 +303,7 @@ const DRILLS = [
   },
   {
     id: 'unknown_fiber', title: 'Identify three unknown fibres',
-    goal: 'Use burn tests, acetone solubility, and microscopy.',
+    goal: 'Use burn tests and microscopy.',
     devices: ['heat_source', 'tweezers', 'microscope', 'spot_plate'],
   },
 ];

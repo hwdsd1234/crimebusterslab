@@ -261,6 +261,8 @@ const ZH_SIM = {
   'none — everything matches': '无——全部吻合',
   'Submit the report? Your answers are locked once it is graded.': '确定提交报告吗？评分后答案将被锁定。',
 
+  'Use burn tests and microscopy.': '用燃烧测试和显微镜观察。',
+
   // Case generator
   'Timeline: {location} was last checked at {t1}. The incident was discovered at {t2}.': '时间线：{location}最后一次检查是在 {t1}。事件在 {t2} 被发现。',
   'Each suspect handed over the items listed on their card. Match every item against the evidence you identify.': '每名嫌疑人都交出了卡片上列出的物品。把每件物品与你鉴定出的证物逐一比对。',

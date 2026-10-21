@@ -1,32 +1,24 @@
 (function (LAB) {
 'use strict';
 
-// Reagents available in the kit and the tests the bench can run.
+// Reagents available in the kit and the tests the bench can run. Only the core
+// Crime Busters tests are offered: look, water, vinegar, iodine, pH, conductivity,
+// density, burn, microscope (plus chromatography, which has its own station).
 
 const REAGENTS = {
   water:   { id: 'water',   name: 'Distilled Water',          color: '#cfe6f5' },
   vinegar: { id: 'vinegar', name: 'Vinegar (dilute acetic acid)', color: '#f2ead0' },
   iodine:  { id: 'iodine',  name: 'Iodine Solution',          color: '#b8860b' },
-  ethanol: { id: 'ethanol', name: 'Ethanol / Rubbing Alcohol', color: '#e8f0e8' },
-  acetone: { id: 'acetone', name: 'Acetone',                  color: '#eef4f8' },
-  h2o2:    { id: 'h2o2',    name: 'Hydrogen Peroxide 3%',     color: '#e6f2f7' },
-  bicarb:  { id: 'bicarb',  name: 'Sodium Bicarbonate Solution', color: '#e9f2f7' },
 };
 
 const TESTS = [
   { id: 'appearance',   label: 'Appearance',      short: 'Look',   device: 'hand_lens' },
   { id: 'water',        label: 'Water',           short: 'H₂O',    device: 'spot_plate' },
-  { id: 'ethanol',      label: 'Ethanol',         short: 'EtOH',   device: 'spot_plate' },
-  { id: 'acetone',      label: 'Acetone',         short: 'Acet',   device: 'spot_plate' },
   { id: 'vinegar',      label: 'Vinegar',         short: 'HOAc',   device: 'spot_plate' },
   { id: 'iodine',       label: 'Iodine',          short: 'I₂',     device: 'spot_plate' },
-  { id: 'bicarb',       label: 'NaHCO₃ solution', short: 'HCO₃',   device: 'spot_plate' },
-  { id: 'h2o2',         label: 'Hydrogen peroxide', short: 'H₂O₂', device: 'spot_plate' },
   { id: 'ph',           label: 'pH',              short: 'pH',     device: 'ph' },
   { id: 'conductivity', label: 'Conductivity',    short: 'Cond',   device: 'conductivity' },
-  { id: 'magnet',       label: 'Magnet',          short: 'Mag',    device: 'magnet' },
   { id: 'density',      label: 'Density',         short: 'ρ',      device: 'density' },
-  { id: 'float',        label: 'Float test',      short: 'Float',  device: 'beaker' },
   { id: 'burn',         label: 'Burn test',       short: 'Burn',   device: 'burn' },
   { id: 'micro',        label: 'Microscope',      short: 'Micro',  device: 'microscope' },
 ];

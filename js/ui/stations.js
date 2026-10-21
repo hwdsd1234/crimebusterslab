@@ -14,7 +14,7 @@ const { t, tb } = LAB;
 
 const ui = {
   station: 'kit', device: 'kit_box', target: null, well: 'A1', inkId: null, solvent: 'water',
-  reagent: 'iodine', magnification: 10, cylinder: 10, view: 'eye', flaskMix: null,
+  reagent: 'iodine', magnification: 40, cylinder: 10, view: 'eye', flaskMix: null,
   open: null,        // the action whose choices are showing
   lastResult: [],    // log lines the last action produced, shown beside the menu
 };
@@ -274,17 +274,6 @@ function testConductivity(target) {
   recordObservation(target, 'conductivity', resolveResult(s, 'conductivity'), { valid: used.ok });
 }
 
-function readCylinder(view) {
-  ui.view = view;
-  markTechnique('meniscus_eye_level', view === 'eye');
-  const v = state.volumeMeasures;
-  if (!v) { note(t('Pour some water into a cylinder first'), 'info'); return; }
-  const parallax = view === 'top' ? { 10: 0.3, 25: 0.6, 50: 1.2, 100: 2.5 }[v.capacity] || 1 : 0;
-  v.reading = +(v.value + parallax).toFixed(1);
-  note(t('Read the {capacity} mL cylinder: {v} mL (true volume {true} mL)', { capacity: v.capacity, v: v.reading, true: v.value.toFixed(1) }),
-    parallax ? 'bad' : 'good');
-}
-
 function displacement(target) {
   const s = sampleFor(target);
   if (!s?.density) { note(t('{label} cannot be measured by displacement', { label: target }), 'info'); return; }
@@ -302,6 +291,7 @@ function measureLiquid(target) {
   if (!s?.density) { note(t('{label} has no density to measure', { label: target }), 'info'); return; }
   recordMeasurement(target, 'liquidMl', LIQUID_ML);
   markTechnique('cylinder_size_match', true);
+  markTechnique('meniscus_eye_level', true);
   note(t('Measured exactly {v} mL of {label} in the 10 mL cylinder, read at eye level', { v: LIQUID_ML.toFixed(1), label: target }), 'info');
 }
 
@@ -397,6 +387,9 @@ const hasMicro = label => {
 
 const A = (id, label, params, run, extra = {}) => ({ id, label, params, run, ...extra });
 
+// Each tool offers only the correct way to run the core tests. Technique is still
+// graded on what gets skipped: an unlabelled well, a tool not cleaned between
+// samples, a balance not zeroed.
 const TOOLS = {
   kit_box: PPE.map(p => A(`ppe_${p.id}`, () => state.ppe[p.id] ? 'Take off: {item}' : 'Put on: {item}', [], () => {
     if (testsStarted()) {
@@ -412,12 +405,6 @@ const TOOLS = {
     A('label', 'Label well {well} as {target}', ['target', 'well'], p => labelWell(p.target, p.well)),
     A('put', 'Put {target} into well {well}', ['target', 'well'], p => putInWell(p.target, p.well), { tone: 'primary' }),
     A('drop', 'Add one drop of {reagent} to well {well}', ['reagent', 'well'], p => addReagent(p.well, p.reagent, false), { tone: 'primary' }),
-    A('flood', 'Pour {reagent} into well {well} until it overflows', ['reagent', 'well'], p => {
-      markTechnique('one_drop_each', false);
-      note(t('Overfilled well {well} — it ran into the next well', { well: p.well }), 'bad');
-      const next = WELLS[WELLS.indexOf(p.well) + 1];
-      if (next && state.wells[next]) state.wells[next].contaminated = true;
-    }),
     A('rinseWell', 'Rinse out well {well}', ['well'], p => {
       delete state.wells[p.well];
       note(t('Rinsed well {well} and dried it', { well: p.well }), 'info');
@@ -426,11 +413,7 @@ const TOOLS = {
 
   dropper: [
     A('transfer', 'Draw up {target} and add a drop to well {well}', ['target', 'well'], p => putInWell(p.target, p.well), { accepts: liquidOnly, tone: 'primary' }),
-    A('drop', 'Add one drop of {reagent} to well {well}, tip held above the well', ['reagent', 'well'], p => addReagent(p.well, p.reagent, false), { tone: 'primary' }),
-    A('touch', 'Add {reagent} to well {well}, touching the tip to the sample', ['reagent', 'well'], p => {
-      addReagent(p.well, p.reagent, true);
-      if (state.wells[p.well]?.sample) note(t('The dropper tip touched the sample — the reagent bottle is contaminated for everyone after you'), 'bad');
-    }),
+    A('drop', 'Add one drop of {reagent} to well {well}', ['reagent', 'well'], p => addReagent(p.well, p.reagent, false), { tone: 'primary' }),
     A('rinse', 'Rinse the dropper with distilled water', [], () => { cleanTool('dropper'); markTechnique('rinsed_between_samples', true); }),
   ],
 
@@ -444,31 +427,20 @@ const TOOLS = {
       const w = state.wells[p.well];
       note(w?.sample ? t('Stirred well {well}; the result settles in a few seconds', { well: p.well }) : t('Well {well} is empty', { well: p.well }), 'info');
     }),
-    A('stirFlask', 'Stir the Erlenmeyer flask with the rod', [], () => { ui.flaskMix = 'stir'; markTechnique('swirl_not_stir', false); }),
   ],
 
   ph: [
     A('drop', 'Put a drop of {target} on the pH paper with a clean rod', ['target'], p => measurePh(p.target, 'drop'), { accepts: hasPh, tone: 'primary' }),
-    A('meter', 'Measure {target} with the pH meter', ['target'], p => measurePh(p.target, 'meter'), { accepts: hasPh }),
-    A('dip', 'Dip the pH paper straight into {target}', ['target'], p => measurePh(p.target, 'dip'), { accepts: hasPh }),
   ],
 
   conductivity: [
     A('test', 'Lower the electrodes into {target}', ['target'], p => testConductivity(p.target), { tone: 'primary' }),
-    A('touch', 'Let the two electrodes touch', [], () => markTechnique('electrodes_apart', false)),
     A('rinse', 'Rinse the electrodes and dry them', [], () => { cleanTool('electrodes'); markTechnique('rinsed_electrodes', true); }),
   ],
 
   graduated_cylinder: [
-    A('pour', 'Measure 8 mL of water in the {cylinder} cylinder', ['cylinder'], p => {
-      state.volumeMeasures = { value: 8, capacity: p.cylinder, reading: null };
-      markTechnique('cylinder_size_match', p.cylinder <= 10);
-      note(t('Poured water to the 8 mL line of the {capacity} mL cylinder', { capacity: p.cylinder }), p.cylinder <= 10 ? 'info' : 'bad');
-    }, { tone: 'primary' }),
-    A('eye', 'Crouch and read the meniscus at eye level', [], () => readCylinder('eye'), { tone: 'primary' }),
-    A('top', 'Read the meniscus standing, from above', [], () => readCylinder('top')),
-    A('displace', 'Drop {target} into 30.0 mL of water and read the new level', ['target'], p => displacement(p.target), { accepts: solidWithDensity }),
-    A('liquid', 'Measure exactly 10.0 mL of {target} for weighing', ['target'], p => measureLiquid(p.target), { accepts: liquidWithDensity }),
+    A('displace', 'Drop {target} into 30.0 mL of water and read the new level', ['target'], p => displacement(p.target), { accepts: solidWithDensity, tone: 'primary' }),
+    A('liquid', 'Measure exactly 10.0 mL of {target} for weighing', ['target'], p => measureLiquid(p.target), { accepts: liquidWithDensity, tone: 'primary' }),
   ],
 
   balance: [
@@ -481,42 +453,25 @@ const TOOLS = {
   ],
 
   beaker: [
-    A('float', 'Drop {target} into a beaker of water', ['target'], p => {
-      const s = sampleFor(p.target);
-      const r = resolveResult(s, 'float');
-      if (!r) { note(t('{label} cannot be float-tested', { label: p.target }), 'info'); return; }
-      recordObservation(p.target, 'float', r);
-    }, { accepts: solidWithDensity, tone: 'primary' }),
-    A('sheet', 'Develop a chromatography sheet of {ink} in {solvent}', ['ink', 'solvent'], p => develop(p.ink, p.solvent, 'sheet')),
-    A('big', 'Run a 100 mL reaction in a 250 mL beaker', [], () => { markTechnique('beaker_size_match', true); }),
-    A('small', 'Run a 100 mL reaction in a 100 mL beaker', [], () => { markTechnique('beaker_size_match', false); }),
-    A('cylFirst', 'Measure 50 mL in a cylinder, then pour it into the beaker', [], () => { markTechnique('no_beaker_measuring', true); }),
-    A('beakerMeasure', 'Measure 50 mL using the beaker’s own markings', [], () => { markTechnique('no_beaker_measuring', false); }),
+    A('sheet', 'Develop a chromatography sheet of {ink} in {solvent}', ['ink', 'solvent'], p => develop(p.ink, p.solvent, 'sheet'), { tone: 'primary' }),
   ],
 
   erlenmeyer: [
     A('swirl', 'Swirl the flask to mix', [], () => { ui.flaskMix = 'swirl'; markTechnique('swirl_not_stir', true); }, { tone: () => ui.flaskMix === 'swirl' ? 'on' : '' }),
-    A('stir', 'Stir the flask with a rod', [], () => { ui.flaskMix = 'stir'; markTechnique('swirl_not_stir', false); }, { tone: () => ui.flaskMix === 'stir' ? 'on' : '' }),
   ],
 
   test_tube: [
     A('quarter', 'Fill the tube one quarter with {target}', ['target'], p => fillTube(p.target, 0.25), { tone: 'primary' }),
-    A('full', 'Fill the tube to the top with {target}', ['target'], p => fillTube(p.target, 0.95)),
     A('heat', 'Heat the tube over the flame', [], heatTube, { tone: 'primary' }),
     A('scrub', 'Empty the tube and scrub it', [], scrubTube),
   ],
 
   test_tube_holder: [
-    A('clampTop', 'Clamp the holder near the top of the tube', [], () => { state.tools.tube.clampedTop = true; }, { tone: () => state.tools.tube.clampedTop ? 'on' : '' }),
-    A('clampMiddle', 'Clamp the holder in the middle of the tube', [], () => { state.tools.tube.clampedTop = false; }, { tone: () => state.tools.tube.clampedTop ? '' : 'on' }),
-    A('aimAway', 'Tilt the mouth away from everyone', [], () => { state.tools.tube.aimedAway = true; }, { tone: () => state.tools.tube.aimedAway ? 'on' : '' }),
-    A('aimPeople', 'Tilt the mouth toward your partner', [], () => { state.tools.tube.aimedAway = false; }, { tone: () => state.tools.tube.aimedAway ? '' : 'on' }),
     A('heat', 'Heat the tube over the flame', [], heatTube, { tone: 'primary' }),
   ],
 
   test_tube_rack: [
     A('quarter', 'Fill the tube one quarter with {target}', ['target'], p => fillTube(p.target, 0.25), { tone: 'primary' }),
-    A('stand', 'Stand the tube upright in the rack', [], () => note(t('The tube stands in the rack — safe to leave while it settles'), 'info')),
   ],
 
   test_tube_brush: [
@@ -534,15 +489,9 @@ const TOOLS = {
       state.microscope.cover = 'angle'; state.microscope.bubbles = false;
       markTechnique('lower_cover_45', true);
     }, { tone: 'primary' }),
-    A('flat', 'Drop the cover slip flat onto the slide', [], () => {
-      if (!state.microscope) { note(t('Mount a sample on a slide first'), 'info'); return; }
-      state.microscope.cover = 'flat'; state.microscope.bubbles = true;
-      markTechnique('lower_cover_45', false);
-    }),
   ],
 
   microscope: [
-    A('mag10', 'Focus at 10×', [], () => { ui.magnification = 10; }, { tone: () => ui.magnification === 10 ? 'on' : '' }),
     A('mag40', 'Switch to 40× and refocus', [], () => { ui.magnification = 40; }, { tone: () => ui.magnification === 40 ? 'on' : '' }),
     A('measure', 'Measure the slide with the eyepiece reticle', [], measureMicro, { tone: 'primary' }),
   ],
@@ -554,49 +503,20 @@ const TOOLS = {
     }, { tone: 'primary' }),
   ],
 
-  magnet: [
-    A('paper', 'Wrap the magnet in paper and pass it over {target}', ['target'], p => {
-      markTechnique('magnet_through_paper', true);
-      recordObservation(p.target, 'magnet', resolveResult(sampleFor(p.target), 'magnet'));
-    }, { accepts: solidOnly, tone: 'primary' }),
-    A('direct', 'Touch the bare magnet to {target}', ['target'], p => {
-      markTechnique('magnet_through_paper', false);
-      recordObservation(p.target, 'magnet', resolveResult(sampleFor(p.target), 'magnet'));
-    }, { accepts: solidOnly }),
-  ],
-
-  thermometer: [
-    A('immerse', 'Read {target} with the bulb fully immersed', ['target'], p => {
-      markTechnique('bulb_immersed', true); markTechnique('not_a_stirrer', true);
-      recordMeasurement(p.target, 'temp', 21.0);
-      note(t('{label}: 21.0 °C', { label: p.target }), 'info');
-    }, { accepts: liquidOnly, tone: 'primary' }),
-    A('partial', 'Read {target} with the bulb half out of the liquid', ['target'], p => {
-      markTechnique('bulb_immersed', false);
-      recordMeasurement(p.target, 'temp', 23.5);
-      note(t('{label}: 23.5 °C — the bulb was reading the air', { label: p.target }), 'bad');
-    }, { accepts: liquidOnly }),
-    A('stir', 'Stir {target} with the thermometer', ['target'], () => markTechnique('not_a_stirrer', false), { accepts: liquidOnly }),
-  ],
-
   tweezers: [
     A('burn', 'Hold {target} in the flame with tweezers, inside the hood', ['target'], p => burnTest(p.target, true), { accepts: solidOnly, tone: 'primary' }),
     A('retrieve', 'Lift a fragment out of the liquid with tweezers', [], () => {
       state.retrieved.done = true;
       note(t('Fragment retrieved and set on the labelled tray'), 'good');
     }),
-    A('fingers', 'Fish the fragment out with your fingers', [], () => note(t('Fingers in an unknown liquid — contaminated evidence and a safety violation'), 'bad')),
   ],
 
   heat_source: [
     A('burn', 'Burn {target} held in tweezers, inside the hood', ['target'], p => burnTest(p.target, true), { accepts: solidOnly, tone: 'primary' }),
-    A('bare', 'Hold {target} in your fingers over the flame at the bench', ['target'], p => burnTest(p.target, false), { accepts: solidOnly }),
-    A('heat', 'Heat the test tube', [], heatTube),
   ],
 
   petri_dish: [
     A('strip', 'Develop a strip of {ink} in {solvent}', ['ink', 'solvent'], p => develop(p.ink, p.solvent, 'strip'), { tone: 'primary' }),
-    A('above', 'Develop {ink} with the {solvent} poured above the baseline', ['ink', 'solvent'], p => develop(p.ink, p.solvent, 'strip', true)),
   ],
 
   pencil: [
@@ -605,28 +525,17 @@ const TOOLS = {
       markTechnique('pencil_not_pen', true);
       note(t('Baseline marked in pencil, 10 mm above the paper edge'), 'good');
     }, { tone: 'primary' }),
-    A('pen', 'Borrow a pen and draw the baseline in ink', [], () => {
-      state.chromaPrep.baseline = 'pen';
-      markTechnique('pencil_not_pen', false);
-    }),
     A('label', 'Label well {well} as {target}', ['target', 'well'], p => labelWell(p.target, p.well)),
   ],
 
   ruler: [
     A('baseline', 'Measure the latest {ink} strip in {solvent} from the baseline, to the mm', ['ink', 'solvent'], () => measureStrip('mm'), { tone: 'primary' }),
-    A('edge', 'Measure the latest {ink} strip in {solvent} from the paper edge', ['ink', 'solvent'], () => measureStrip('edge')),
-    A('cm', 'Eyeball the latest {ink} strip in {solvent} to the nearest cm', ['ink', 'solvent'], () => measureStrip('cm')),
   ],
 
   paper_towels: [
     A('dropper', 'Rinse and dry the dropper', [], () => { cleanTool('dropper'); markTechnique('rinsed_between_samples', true); }),
     A('spatula', 'Wipe the spatula clean', [], () => { cleanTool('spatula'); markTechnique('cleaned_between_samples', true); }),
     A('electrodes', 'Rinse and dry the electrodes', [], () => { cleanTool('electrodes'); markTechnique('rinsed_electrodes', true); }),
-    A('bottles', 'Swap any contaminated reagent bottles for fresh ones', [], () => {
-      const dirty = Object.keys(state.tools.bottles);
-      state.tools.bottles = {};
-      note(dirty.length ? t('Replaced {n} contaminated reagent bottle(s)', { n: dirty.length }) : t('No reagent bottles needed replacing'), 'good');
-    }),
   ],
 };
 TOOLS.cover_slip = TOOLS.slide;
@@ -944,26 +853,7 @@ const STATIONS = {
     },
   },
 
-  magnet: {
-    view: () => {
-      const target = currentTarget();
-      const r = state.observations[target]?.magnet;
-      return shell(t('Magnets'), 'magnet', `
-        <div class="lens-view">${r ? observationText(r) : t('No magnet test recorded')}</div>
-        ${readout([[t('Evidence'), target]])}`, 'Wrap the magnet in paper so the filings come off cleanly.');
-    },
-  },
 
-  temperature: {
-    view: () => {
-      const target = currentTarget();
-      const m = state.measurements[target] || {};
-      return shell(t('Thermometer'), 'thermometer', `
-        ${svg.thermometerSvg(m.temp)}
-        ${readout([[t('Evidence'), target], [t('Temperature'), m.temp != null ? `${m.temp.toFixed(1)} °C` : null]])}`,
-        'A thermometer is not a stirring rod.');
-    },
-  },
 
   clean: {
     view: () => shell(t('Cleaning and decontamination'), 'paper_towels', `
@@ -975,17 +865,6 @@ const STATIONS = {
       'Between every unknown, every tool.'),
   },
 
-  beaker: {
-    view: () => {
-      const target = currentTarget();
-      const r = state.observations[target]?.float;
-      return shell(t('Beakers'), 'beaker', `
-        ${svg.beakerSvg(r?.token)}
-        ${readout([[t('Evidence'), target], [t('Float test'), r ? observationText(r) : null]])}
-        <p class="callout small">${tb('Beaker graduations are good to roughly 5%. Use one for reactions, float tests and chromatogram development, never for a volume you have to report.')}</p>`,
-        'Reactions and developing chromatograms, not measuring.');
-    },
-  },
 
   flask: {
     view: () => shell(t('Erlenmeyer flask'), 'erlenmeyer', `

@@ -1,8 +1,8 @@
 (function (LAB) {
 'use strict';
 
-// The 24 items on the 2026 Div. B Chemistry Lab Equipment List, each with the
-// technique the real event actually grades.
+// The items from the 2026 Div. B Chemistry Lab Equipment List that the core Crime
+// Busters tests use, each with the technique the real event actually grades.
 
 const DEVICES = [
   { id: 'kit_box', name: 'Kit Box', group: 'Setup', use: 'Contains all of the kit materials', station: 'kit', icon: 'box' },
@@ -13,11 +13,7 @@ const DEVICES = [
       { id: 'cylinder_size_match', label: 'Chose the cylinder closest to the volume needed', points: 2 },
     ] },
 
-  { id: 'beaker', name: 'Beakers (50–500 mL)', group: 'Glassware', use: 'Doing reactions, developing chromatograms', station: 'beaker', icon: 'beaker',
-    checks: [
-      { id: 'no_beaker_measuring', label: 'Did not measure volume with a beaker (~5% error)', points: 2 },
-      { id: 'beaker_size_match', label: 'Chose a beaker large enough for the reaction', points: 1 },
-    ] },
+  { id: 'beaker', name: 'Beakers (50–500 mL)', group: 'Glassware', use: 'Doing reactions, developing chromatograms', station: 'chromatography', icon: 'beaker' },
 
   { id: 'erlenmeyer', name: 'Erlenmeyer Flasks (50–250 mL)', group: 'Glassware', use: 'Doing reactions', station: 'flask', icon: 'flask',
     checks: [
@@ -68,12 +64,6 @@ const DEVICES = [
     ] },
 
   { id: 'stirring_rod', name: 'Stirring Rods', group: 'Hand Tools', use: 'Stirring mixtures', station: 'spot_plate', icon: 'rod' },
-  { id: 'thermometer', name: 'Thermometer', group: 'Measuring', use: 'Determining the temperature of a solution', station: 'temperature', icon: 'thermometer',
-    checks: [
-      { id: 'not_a_stirrer', label: 'Did not use the thermometer as a stirrer', points: 2 },
-      { id: 'bulb_immersed', label: 'Kept the bulb fully immersed while reading', points: 1 },
-    ] },
-
   { id: 'tweezers', name: 'Metal Tongs, Forceps, or Tweezers', group: 'Hand Tools', use: 'Holding objects, retrieving objects from liquids', station: 'retrieve', icon: 'tweezers' },
   { id: 'ph', name: 'pH Paper / Meter', group: 'Measuring', use: 'Test acidity or alkalinity of solution', station: 'ph', icon: 'phpaper',
     checks: [
@@ -96,10 +86,6 @@ const DEVICES = [
     checks: [
       { id: 'measure_from_baseline', label: 'Measured distances from the baseline, not the strip edge', points: 2 },
       { id: 'mm_precision', label: 'Recorded distances to the nearest millimetre', points: 1 },
-    ] },
-  { id: 'magnet', name: 'Magnets', group: 'Hand Tools', use: 'For extraction and identification of iron filings', station: 'magnet', icon: 'magnet',
-    checks: [
-      { id: 'magnet_through_paper', label: 'Drew filings out through paper rather than touching the sample', points: 1 },
     ] },
 ];
 
@@ -134,7 +120,6 @@ const PPE = [
 const TECHNIQUE_FAILURES = {
   meniscus_eye_level: 'Read the cylinder from above — parallax makes the volume wrong',
   cylinder_size_match: 'Used a 100 mL cylinder for a small volume — too coarse to read',
-  no_beaker_measuring: 'Measured volume with a beaker — beakers are only accurate to about 5%',
   swirl_not_stir: 'Stirred the flask with a rod instead of swirling it',
   heat_fill_third: 'Heated a test tube more than one third full — it boiled over',
   heat_aim_away: 'Pointed a heated test tube toward someone',
@@ -145,16 +130,12 @@ const TECHNIQUE_FAILURES = {
   tip_not_touched: 'Touched the dropper tip to the sample — the reagent bottle is now contaminated',
   rinsed_between_samples: 'Used the same dropper on two samples without rinsing — cross-contamination',
   cleaned_between_samples: 'Used the same spatula on two samples — cross-contamination',
-  not_a_stirrer: 'Used the thermometer to stir',
-  bulb_immersed: 'Read the thermometer with the bulb out of the liquid',
   no_dipping: 'Dipped pH paper straight into the solution — the whole sample is now contaminated',
   electrodes_apart: 'Let the conductivity electrodes touch — short circuit, false reading',
   rinsed_electrodes: 'Did not rinse the conductivity electrodes between samples',
   pencil_not_pen: 'Marked the baseline in pen — the pen ink ran with the solvent and ruined the strip',
   measure_from_baseline: 'Measured Rf from the bottom edge of the strip instead of the baseline',
   mm_precision: 'Recorded a distance without millimetre precision',
-  magnet_through_paper: 'Touched the magnet directly to the sample',
-  beaker_size_match: 'Ran the reaction in a beaker too small for it — it foamed over the rim',
   solvent_below_baseline: 'Poured the solvent above the baseline — the spots dissolved into the solvent pool',
   burn_tweezers: 'Ran a burn test without tweezers or the hood — unsafe and it would cost you at the event',
   tare_balance: 'Weighed without zeroing the balance — the weighing paper is counted in the mass',
