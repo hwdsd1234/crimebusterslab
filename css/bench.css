@@ -6,7 +6,9 @@
 }
 .shelf-title { font-size: .95rem; margin-bottom: .7rem; }
 .shelf-group { margin-bottom: .9rem; min-width: 200px; }
-.shelf-group h3 { margin-bottom: .4rem; }
+.shelf-group h3 { margin-bottom: .15rem; }
+.shelf-hint { font-size: .72rem; color: var(--ink-soft); margin: 0 0 .4rem; }
+.provided-mark { color: var(--warn); font-size: .7rem; }
 .device-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
 
 .device {
@@ -133,10 +135,8 @@
 .tool-chip.dirty { background: var(--danger-soft); color: var(--danger); border-color: transparent; font-weight: 600; }
 
 /* ── bench log ── */
-.station-log { border-top: 1px solid var(--line); margin-top: 1.1rem; padding-top: .7rem; }
-.station-log summary { cursor: pointer; font-weight: 600; font-size: .88rem; }
-.station-log .count { font-size: .7rem; color: var(--ink-soft); background: var(--panel-2); border-radius: 999px; padding: .05rem .45rem; margin-left: .3rem; }
-.benchlog { margin: .5rem 0 0; padding-left: 1.1rem; font-size: .79rem; max-height: 220px; overflow-y: auto; }
+.cf-section .count { font-size: .7rem; color: var(--ink-soft); background: var(--panel-2); border-radius: 999px; padding: .05rem .45rem; margin-left: .3rem; }
+.benchlog { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .79rem; max-height: 220px; overflow-y: auto; }
 .benchlog li { margin-bottom: .25rem; color: var(--ink-soft); }
 .benchlog li.good { color: var(--accent); }
 .benchlog li.bad { color: var(--danger); }

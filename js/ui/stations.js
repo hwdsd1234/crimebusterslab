@@ -620,17 +620,6 @@ function toolPanel(deviceId) {
   </div>`;
 }
 
-// The full bench log, newest first. Every line is listed: this list is the record a
-// student gets scored on, so a truncated one hides evidence they still need.
-function benchLog() {
-  const entries = state.log;
-  if (!entries.length) return '';
-  return `<details class="station-log" open>
-    <summary>${t('Bench log')} <span class="count">${entries.length}</span></summary>
-    <ul class="benchlog">${entries.map(l => `<li class="${l.kind}">${l.text}</li>`).join('')}</ul>
-  </details>`;
-}
-
 function shell(title, deviceId, drawing, hint) {
   const d = DEVICE_BY_ID[ui.device] || DEVICE_BY_ID[deviceId];
   return `<div class="station">
@@ -645,7 +634,6 @@ function shell(title, deviceId, drawing, hint) {
       <div class="apparatus-wrap">${drawing}</div>
       <div class="controls">${toolPanel(ui.device)}</div>
     </div>
-    ${benchLog()}
   </div>`;
 }
 

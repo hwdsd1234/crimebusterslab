@@ -127,6 +127,18 @@ function notesSection() {
   </section>`;
 }
 
+// The full bench log, newest first. Every line is listed: this list is the record a
+// student gets scored on, so a truncated one hides evidence they still need.
+function logSection() {
+  const entries = state.log;
+  return `<section class="cf-section">
+    <h3>${t('Bench log')} <span class="count">${entries.length}</span></h3>
+    ${entries.length
+      ? `<ul class="benchlog">${entries.map(l => `<li class="${l.kind}">${l.text}</li>`).join('')}</ul>`
+      : `<p class="empty">${t('Nothing recorded yet.')}</p>`}
+  </section>`;
+}
+
 function renderCaseFile(root) {
   // The notepad keeps its caret: if it is being typed in, leave it alone.
   const typing = document.activeElement?.id === 'caseNotes';
@@ -134,10 +146,10 @@ function renderCaseFile(root) {
   if (typing) {
     const keep = root.querySelector('#caseNotes').closest('.cf-section');
     root.querySelectorAll('.cf-section').forEach(el => { if (el !== keep) el.remove(); });
-    keep.insertAdjacentHTML('beforebegin', caseSection() + suspectsSection() + evidenceSection() + inkSection());
+    keep.insertAdjacentHTML('beforebegin', caseSection() + suspectsSection() + evidenceSection() + inkSection() + logSection());
     return;
   }
-  root.innerHTML = caseSection() + suspectsSection() + evidenceSection() + inkSection() + notesSection();
+  root.innerHTML = caseSection() + suspectsSection() + evidenceSection() + inkSection() + logSection() + notesSection();
   root.scrollTop = scroll;
 }
 
