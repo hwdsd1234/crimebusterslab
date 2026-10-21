@@ -37,7 +37,10 @@ const DEVICES = [
     ] },
   { id: 'test_tube_rack', name: 'Test Tube Rack', group: 'Glassware', use: 'Hold test tubes', station: 'test_tube', icon: 'rack' },
 
-  { id: 'petri_dish', name: 'Petri Dishes', group: 'Glassware', use: 'Doing reactions, developing chromatograms', station: 'chromatography', icon: 'petri' },
+  { id: 'petri_dish', name: 'Petri Dishes', group: 'Glassware', use: 'Doing reactions, developing chromatograms', station: 'chromatography', icon: 'petri',
+    checks: [
+      { id: 'solvent_below_baseline', label: 'Kept the solvent level below the baseline', points: 2 },
+    ] },
   { id: 'spot_plate', name: 'Spot Plates', group: 'Glassware', use: 'Semi-micro scale reactions, testing solubility, pH', station: 'spot_plate', icon: 'spotplate',
     checks: [
       { id: 'label_wells', label: 'Labelled which unknown went in which well', points: 2 },
@@ -104,13 +107,19 @@ const DEVICES = [
 // rules manual before treating them as team-supplied.
 const EVENT_PROVIDED = [
   { id: 'microscope', name: 'Microscope', group: 'Provided', use: 'Provided at the event — Slides and Cover Slips both reference it', station: 'microscope', icon: 'microscope', provided: true },
-  { id: 'heat_source', name: 'Hot Plate / Flame', group: 'Provided', use: 'Needed for heating and burn tests — check whether open flame is allowed at your table', station: 'burn', icon: 'flame', provided: true },
-  { id: 'balance', name: 'Balance', group: 'Provided', use: 'Needed for density measurements', station: 'density', icon: 'balance', provided: true },
+  { id: 'heat_source', name: 'Hot Plate / Flame', group: 'Provided', use: 'Needed for heating and burn tests — check whether open flame is allowed at your table', station: 'burn', icon: 'flame', provided: true,
+    checks: [
+      { id: 'burn_tweezers', label: 'Held burn samples with tweezers in the hood', points: 2 },
+    ] },
+  { id: 'balance', name: 'Balance', group: 'Provided', use: 'Needed for density measurements', station: 'density', icon: 'balance', provided: true,
+    checks: [
+      { id: 'tare_balance', label: 'Zeroed the balance with the weighing paper on it', points: 1 },
+    ] },
 ];
 
 const DEVICE_BY_ID = Object.fromEntries([...DEVICES, ...EVENT_PROVIDED].map(d => [d.id, d]));
 const GROUPS = ['Setup', 'Glassware', 'Measuring', 'Hand Tools', 'Consumables', 'Provided'];
-const CHECK_LABELS = Object.fromEntries(DEVICES.flatMap(d => (d.checks || []).map(c => [c.id, c.label])));
+const CHECK_LABELS = Object.fromEntries([...DEVICES, ...EVENT_PROVIDED].flatMap(d => (d.checks || []).map(c => [c.id, c.label])));
 
 const PPE = [
   { id: 'goggles', name: 'Goggles', points: 3 },
@@ -145,6 +154,10 @@ const TECHNIQUE_FAILURES = {
   measure_from_baseline: 'Measured Rf from the bottom edge of the strip instead of the baseline',
   mm_precision: 'Recorded a distance without millimetre precision',
   magnet_through_paper: 'Touched the magnet directly to the sample',
+  beaker_size_match: 'Ran the reaction in a beaker too small for it — it foamed over the rim',
+  solvent_below_baseline: 'Poured the solvent above the baseline — the spots dissolved into the solvent pool',
+  burn_tweezers: 'Ran a burn test without tweezers or the hood — unsafe and it would cost you at the event',
+  tare_balance: 'Weighed without zeroing the balance — the weighing paper is counted in the mass',
 };
 
 Object.assign(LAB, { DEVICES: DEVICES, EVENT_PROVIDED: EVENT_PROVIDED, DEVICE_BY_ID: DEVICE_BY_ID, GROUPS: GROUPS, CHECK_LABELS: CHECK_LABELS, PPE: PPE, TECHNIQUE_FAILURES: TECHNIQUE_FAILURES });

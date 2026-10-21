@@ -37,17 +37,15 @@
 </header>
 
 <main class="layout">
-  <aside class="shelf" id="shelf"></aside>
+  <aside class="shelf" id="shelf" aria-label="Equipment"></aside>
 
-  <section class="stage" id="stage"></section>
+  <div class="center">
+    <section class="stage" id="stage"></section>
+    <section class="panel report" id="questions"></section>
+    <section class="panel" id="technique"></section>
+  </div>
 
-  <aside class="sidepanel" id="sidepanel">
-    <div class="panel" id="caseBrief"></div>
-    <div class="panel" id="unknowns"></div>
-    <div class="panel" id="logbook"></div>
-    <div class="panel" id="technique"></div>
-    <div class="panel wide" id="questions"></div>
-  </aside>
+  <aside class="casefile" id="casefile" aria-label="Case file"></aside>
 </main>
 
 <footer class="rulebar" data-i18n="Equipment set is the 2026 Division B Chemistry Lab Equipment List. Microscope, heat source, and balance are shown as event-provided — confirm against the current Rules Manual before treating them as team-supplied.">Equipment set is the 2026 Division B Chemistry Lab Equipment List. Microscope, heat source, and balance are shown as event-provided — confirm against the current Rules Manual before treating them as team-supplied.</footer>
@@ -61,6 +59,7 @@
 <script src="js/i18n/zh-samples.js"></script>
 <script src="js/i18n/zh-bio.js"></script>
 <script src="js/i18n/zh-case.js"></script>
+<script src="js/i18n/zh-sim.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/data/samples.js"></script>
 <script src="js/data/biology.js"></script>
@@ -76,6 +75,7 @@
 <script src="js/ui/stations.js"></script>
 <script src="js/ui/shelf.js"></script>
 <script src="js/ui/panels.js"></script>
+<script src="js/ui/casefile.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -5,8 +5,8 @@ const { state, commit, resetBench, note, save, load, restoreBench, exportCsv } =
 const { generateCase, DRILLS } = LAB;
 const { DEVICE_BY_ID } = LAB;
 const { renderShelf } = LAB;
-const { STATIONS, ui } = LAB;
-const { renderUnknowns, renderLogbook, renderQuestions, renderCaseBrief, renderTechnique } = LAB;
+const { STATIONS, ui, toggleAction, runAction, setParam } = LAB;
+const { renderQuestions, renderTechnique, renderCaseFile } = LAB;
 const { t, tb, getLang, setLang, syncDocumentLang } = LAB;
 
 const $ = sel => document.querySelector(sel);
@@ -38,9 +38,7 @@ function redraw() {
   renderShelf(shelf);
   const def = STATIONS[ui.station] || STATIONS.kit;
   stage.innerHTML = def.view();
-  renderCaseBrief($('#caseBrief'));
-  renderUnknowns($('#unknowns'));
-  renderLogbook($('#logbook'));
+  renderCaseFile($('#casefile'));
   renderTechnique($('#technique'));
   renderQuestions($('#questions'));
   renderScoreChip();
@@ -48,9 +46,19 @@ function redraw() {
   renderLangBar();
 }
 
+// Until a case report is submitted the chip shows progress, not a score, so it cannot
+// be watched while flipping answers.
 function renderScoreChip() {
-  const total = state.score.possible ? `${state.score.earned}/${state.score.possible}` : '—';
-  $('#scoreChip').textContent = total;
+  const chip = $('#scoreChip');
+  if (state.case && !state.submitted) {
+    const done = state.case.questions.filter(q => {
+      const a = state.answers[q.id];
+      return a != null && a !== '' && !(Array.isArray(a) && !a.length);
+    }).length;
+    chip.textContent = t('{done}/{total} answered', { done, total: state.case.questions.length });
+    return;
+  }
+  chip.textContent = state.score.possible ? `${state.score.earned}/${state.score.possible}` : '—';
 }
 
 function renderModeBar() {
@@ -76,6 +84,8 @@ function openDevice(id) {
   const device = DEVICE_BY_ID[id] || DEVICE_BY_ID.kit_box;
   ui.device = device.id;
   ui.station = device.station;
+  ui.open = null;
+  ui.lastResult = [];
 }
 
 function startCase(seed) {
@@ -135,50 +145,54 @@ shelf.addEventListener('click', e => {
   redraw();
 });
 
+// Stage clicks: a well in the drawing, an action in the tool menu, a choice chip, or
+// the button that carries an action out with the chosen options.
 stage.addEventListener('click', e => {
   const well = e.target.closest('[data-well]');
-  if (well?.dataset.well) ui.well = well.dataset.well;
-  const btn = e.target.closest('[data-action]');
-  if (!btn) { if (well?.dataset.well) redraw(); return; }
-  const def = STATIONS[ui.station];
-  def?.action?.(btn.dataset.action, btn.dataset, stage);
+  if (well) { ui.well = well.dataset.well; redraw(); return; }
+  const chip = e.target.closest('[data-param]');
+  if (chip) { setParam(chip.dataset.param, chip.dataset.value); redraw(); return; }
+  const head = e.target.closest('[data-act]');
+  const run = e.target.closest('[data-run]');
+  if (!head && !run) return;
+  if (run) runAction(ui.device, run.dataset.run);
+  else if (!toggleAction(ui.device, head.dataset.act)) { redraw(); return; }
   commit();
   save();
   redraw();
 });
 
-const SELECT_UI = { target: 'target', reagent: 'reagent', ink: 'inkId', solvent: 'solvent', cyl: 'cylinder' };
-const TYPED_FIELDS = ['volRead', 'mass', 'v0', 'v1', 'dyeMm', 'diaUm', 'medUm'];
-const CHECK_FIELDS = ['labelWell', 'touchTip', 'fromBaseline'];
-
-// Typed values are captured as they go in; the stage redraws constantly and would
-// otherwise hand back an empty form.
-stage.addEventListener('input', e => {
-  if (TYPED_FIELDS.includes(e.target.id)) ui.form[e.target.id] = e.target.value;
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && ui.open) { ui.open = null; redraw(); }
 });
 
-stage.addEventListener('change', e => {
-  const well = e.target.closest('[data-well]');
-  if (well?.dataset.well) { ui.well = well.dataset.well; redraw(); return; }
-  const key = SELECT_UI[e.target.id];
-  if (key) {
-    ui[key] = key === 'cylinder' ? parseInt(e.target.value, 10) : e.target.value;
+$('#casefile').addEventListener('click', e => {
+  const u = e.target.closest('[data-unknown]');
+  if (u) { ui.target = u.dataset.unknown; redraw(); return; }
+  const m = e.target.closest('[data-mark]');
+  if (m) {
+    const id = m.dataset.mark;
+    state.notes.marks[id] = state.notes.marks[id] === m.dataset.value ? null : m.dataset.value;
+    save();
     redraw();
     return;
   }
-  if (CHECK_FIELDS.includes(e.target.id)) ui.form[e.target.id] = e.target.checked;
+  const d = e.target.closest('[data-drill]');
+  if (!d) return;
+  const drill = DRILLS.find(x => x.id === d.dataset.drill);
+  if (drill) startDrill(drill);
 });
 
-$('#sidepanel').addEventListener('click', e => {
-  const u = e.target.closest('[data-unknown]');
-  if (!u) return;
-  ui.target = u.dataset.unknown;
-  redraw();
+// The notepad is saved as it is typed and never triggers a redraw, which would drop the caret.
+$('#casefile').addEventListener('input', e => {
+  if (e.target.id !== 'caseNotes') return;
+  state.notes.text = e.target.value;
+  save();
 });
 
 function recordAnswer(el) {
   const q = state.case?.questions.find(x => x.id === el.dataset.question);
-  if (!q) return false;
+  if (!q || state.submitted) return false;
   if (el.type === 'checkbox') {
     const set = new Set(state.answers[q.id] || []);
     el.checked ? set.add(el.value) : set.delete(el.value);
@@ -199,6 +213,15 @@ $('#questions').addEventListener('input', e => {
   if (!el || el.type !== 'number') return;
   // No re-render here: rebuilding the panel mid-typing would drop the caret.
   if (recordAnswer(el)) renderScoreChip();
+});
+
+$('#questions').addEventListener('click', e => {
+  if (e.target.id !== 'submitReport' || state.submitted) return;
+  if (!window.confirm(t('Submit the report? Your answers are locked once it is graded.'))) return;
+  state.submitted = true;
+  note(t('Report submitted'), 'good');
+  save();
+  redraw();
 });
 
 $('#questions').addEventListener('change', e => {
@@ -241,13 +264,6 @@ $('#exportCsv').addEventListener('click', () => {
   a.click();
 });
 
-$('#caseBrief').addEventListener('click', e => {
-  const d = e.target.closest('[data-drill]');
-  if (!d) return;
-  const drill = DRILLS.find(x => x.id === d.dataset.drill);
-  if (drill) startDrill(drill);
-});
-
 // ───────────────────────── boot ─────────────────────────
 
 syncDocumentLang();
@@ -260,6 +276,7 @@ else startSandbox();
 if (saved) {
   state.ppe = { ...state.ppe, ...saved.ppe };
   state.answers = saved.answers || {};
+  state.submitted = !!saved.submitted;
   restoreBench(saved.bench);
   note(t('Restored the bench from your last session'), 'info');
   redraw();
@@ -267,5 +284,4 @@ if (saved) {
 
 window.addEventListener('beforeunload', save);
 
-Object.assign(LAB, {  });
 })(window.LAB);

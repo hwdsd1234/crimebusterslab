@@ -26,6 +26,7 @@ const TESTS = [
   { id: 'conductivity', label: 'Conductivity',    short: 'Cond',   device: 'conductivity' },
   { id: 'magnet',       label: 'Magnet',          short: 'Mag',    device: 'magnet' },
   { id: 'density',      label: 'Density',         short: 'ρ',      device: 'density' },
+  { id: 'float',        label: 'Float test',      short: 'Float',  device: 'beaker' },
   { id: 'burn',         label: 'Burn test',       short: 'Burn',   device: 'burn' },
   { id: 'micro',        label: 'Microscope',      short: 'Micro',  device: 'microscope' },
 ];

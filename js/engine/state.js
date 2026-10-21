@@ -9,6 +9,19 @@ const TEST_NAMES = Object.fromEntries(TESTS.map(x => [x.id, x.label]));
 const STORAGE_KEY = 'cb-lab-v1';
 const listeners = new Set();
 
+// bottles: reagent id -> the unknown its dropper tip was touched to. A touched tip
+// contaminates the bottle, so every later drop from it is suspect.
+function freshTools() {
+  return {
+    dropper: { contaminatedWith: null },
+    spatula: { contaminatedWith: null },
+    electrodes: { contaminatedWith: null },
+    tube: { filledFraction: 0, aimedAway: true, clampedTop: true, contents: null },
+    balance: { tared: false, reading: null },
+    bottles: {},
+  };
+}
+
 const state = {
   mode: 'sandbox',
   seed: 0,
@@ -17,12 +30,7 @@ const state = {
   ppe: Object.fromEntries(PPE.map(p => [p.id, false])),
 
   // Tool state is what makes contamination real.
-  tools: {
-    dropper: { contaminatedWith: null },
-    spatula: { contaminatedWith: null },
-    electrodes: { contaminatedWith: null },
-    tube: { filledFraction: 0, aimedAway: true, clampedTop: true },
-  },
+  tools: freshTools(),
 
   wells: {},              // wellId -> { sample, reagent, result, labelled }
   observations: {},       // unknownLabel -> testId -> { token, key, vars, valid, note }
@@ -31,10 +39,16 @@ const state = {
   microscope: null,
   burnResults: {},
   retrieved: {},
+  volumeMeasures: null,
+  chromaPrep: { baseline: null },
+
+  // The student's own deductions: suspect marks and a free-text notepad.
+  notes: { marks: {}, text: '' },
 
   technique: {},          // checkId -> 'ok' | 'failed'
   log: [],
   answers: {},
+  submitted: false,
   score: { earned: 0, possible: 0 },
   clock: { startedAt: null, elapsedMs: 0 },
 };
@@ -53,13 +67,12 @@ function resetBench() {
   state.technique = {};
   state.log = [];
   state.answers = {};
+  state.submitted = false;
   state.score = { earned: 0, possible: 0 };
-  state.tools = {
-    dropper: { contaminatedWith: null },
-    spatula: { contaminatedWith: null },
-    electrodes: { contaminatedWith: null },
-    tube: { filledFraction: 0, aimedAway: true, clampedTop: true },
-  };
+  state.volumeMeasures = null;
+  state.chromaPrep = { baseline: null };
+  state.notes = { marks: {}, text: '' };
+  state.tools = freshTools();
   state.clock = { startedAt: Date.now(), elapsedMs: 0 };
   commit();
 }
@@ -96,6 +109,9 @@ function markTechnique(checkId, ok) {
   }
 }
 
+// The cleaning check each shared tool is graded on.
+const CLEANING_CHECK = { dropper: 'rinsed_between_samples', spatula: 'cleaned_between_samples', electrodes: 'rinsed_electrodes' };
+
 // Runs a tool against a sample and reports whether contamination corrupted it.
 function useTool(toolId, sampleLabel) {
   const tool = state.tools[toolId];
@@ -104,6 +120,8 @@ function useTool(toolId, sampleLabel) {
     const prior = tool.contaminatedWith;
     note(t('Contamination: the {tool} still carried residue from {prior} into {sample}',
       { tool: t(toolId), prior, sample: sampleLabel }), 'bad');
+    if (CLEANING_CHECK[toolId]) markTechnique(CLEANING_CHECK[toolId], false);
+    tool.contaminatedWith = sampleLabel;
     return { ok: false, contaminatedBy: prior };
   }
   tool.contaminatedWith = sampleLabel;
@@ -138,7 +156,9 @@ function recordObservation(label, testId, result, { valid = true, note: n } = {}
 
 function observationText(record) {
   if (!record) return '';
-  return record.vars ? tVars(record.key, record.vars) : t(record.key);
+  // A raw result (straight from resolveResult) carries text, a recorded one carries key.
+  const key = record.key || record.text;
+  return record.vars ? tVars(key, record.vars) : t(key);
 }
 
 function recordMeasurement(label, key, value) {
@@ -158,12 +178,13 @@ function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       mode: state.mode, seed: state.seed,
       drillId: state.mode === 'drill' ? state.activeDrill?.id || null : null,
-      ppe: state.ppe, answers: state.answers,
+      ppe: state.ppe, answers: state.answers, submitted: state.submitted,
       bench: {
         wells: state.wells, observations: state.observations, measurements: state.measurements,
         chromatograms: state.chromatograms, microscope: state.microscope,
         burnResults: state.burnResults, retrieved: state.retrieved,
         technique: state.technique, tools: state.tools, log: state.log,
+        volumeMeasures: state.volumeMeasures, chromaPrep: state.chromaPrep, notes: state.notes,
       },
     }));
   } catch { /* storage unavailable — the lab still runs in memory */ }
@@ -181,7 +202,10 @@ function restoreBench(bench) {
   state.burnResults = bench.burnResults || {};
   state.retrieved = bench.retrieved || {};
   state.technique = bench.technique || {};
-  state.tools = bench.tools || state.tools;
+  state.tools = { ...freshTools(), ...(bench.tools || {}) };
+  state.volumeMeasures = bench.volumeMeasures || null;
+  state.chromaPrep = bench.chromaPrep || { baseline: null };
+  state.notes = { marks: {}, text: '', ...(bench.notes || {}) };
   state.log = bench.log || [];
   commit();
 }

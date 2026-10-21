@@ -1,9 +1,9 @@
 (function (LAB) {
 'use strict';
 
-const { BY_CATEGORY, TESTS, candidatesFor, labelFor, distinguishingTests, resolveResult, observationOptions, shuffleStable, mulberry32, INKS, INK_BY_ID, SOLVENTS } = LAB;
-const { CRIME_TYPES, FIRST_NAMES, LAST_NAMES, ROLES, VICTIMS, LOCATIONS, ALIBIS, MOTIVES } = LAB;
-const { t, tb } = LAB;
+const { BY_ID, BY_CATEGORY, TESTS, candidatesFor, labelFor, distinguishingTests, resolveResult, observationOptions, shuffleStable, mulberry32, INKS, INK_BY_ID, SOLVENTS } = LAB;
+const { CRIME_TYPES, FIRST_NAMES, LAST_NAMES, ROLES, PLACES, VICTIMS, LOCATIONS, TIMES_LOCKED, TIMES_FOUND, ALIBIS_VERIFIED, ALIBIS_UNVERIFIED, MOTIVES } = LAB;
+const { t, tb, tVars } = LAB;
 
 // Greedy selection that guarantees every chosen unknown is separable from every
 // other one using the equipment on the shelf. Without this a generated case can be
@@ -37,13 +37,14 @@ function generateCase(seed) {
     const pool = candidatesFor(category);
     if (!pool?.length) continue;
     const chosen = pickDistinguishable(pool, 2, rng);
-    chosen.forEach(s => unknowns.push({ sampleId: s.id, category }));
+    chosen.forEach((s, k) => unknowns.push({ sampleId: s.id, category, where: crime.where?.[category]?.[k] || null }));
   }
-
-  const needsChromatography = !!crime.chromatography;
-  const inkSet = needsChromatography ? pickN(INKS, 4, rng) : [];
-  const questionedInk = inkSet[0];
-  const culpritInk = inkSet[1];
+  // Labels have to exist before the questions are written, or every prompt reads
+  // "Identify white powder undefined."
+  unknowns.forEach((u, i) => {
+    u.label = `U${i + 1}`;
+    if (u.where) u.where = t(u.where);
+  });
 
   const solvent = pick(Object.keys(SOLVENTS), rng);
 
@@ -51,63 +52,89 @@ function generateCase(seed) {
   const firstNames = pickN(FIRST_NAMES, suspectCount, rng);
   const lastNames = pickN(LAST_NAMES, suspectCount, rng);
   const roles = pickN(ROLES, suspectCount, rng);
-  const alibis = pickN(ALIBIS, suspectCount, rng);
   const motives = pickN(MOTIVES, suspectCount, rng);
 
-  const suspects = firstNames.map((fn, i) => ({
-    id: `s${i}`,
-    name: `${fn} ${lastNames[i]}`,
-    role: t(roles[i]),
-    alibi: t(alibis[i]),
-    motive: t(motives[i]),
-    possessions: [],
-    inkId: null,
-  }));
+  const culpritIndex = Math.floor(rng() * suspectCount);
+  // The culprit and one innocent suspect have only their own word for an alibi.
+  const shakyIndex = (culpritIndex + 1 + Math.floor(rng() * (suspectCount - 1))) % suspectCount;
+  const verified = pickN(ALIBIS_VERIFIED, suspectCount, rng);
+  const unverified = pickN(ALIBIS_UNVERIFIED, 2, rng);
 
-  const culpritIndex = Math.floor(rng() * suspects.length);
+  const suspects = firstNames.map((fn, i) => {
+    const shaky = i === culpritIndex || i === shakyIndex;
+    return {
+      id: `s${i}`,
+      name: `${fn} ${lastNames[i]}`,
+      role: t(roles[i]),
+      alibi: t(shaky ? unverified[i === culpritIndex ? 0 : 1] : verified[i]),
+      alibiVerified: !shaky,
+      motive: t(motives[i]),
+      items: [],
+      possessions: [],
+      inkId: null,
+    };
+  });
   const culprit = suspects[culpritIndex];
 
-  // The culprit's belongings match every piece of evidence. Each distractor
-  // matches all but one, so a student who identifies only some unknowns will
-  // wrongly accuse someone.
+  // Every suspect hands over one item per piece of evidence. The culprit's items are
+  // the evidence; each innocent suspect's set differs in one or two places, with a
+  // look-alike from the same category. Identifying only some unknowns, or mixing up
+  // two similar ones, points at the wrong person.
+  const evidenceIds = new Set(unknowns.map(u => u.sampleId));
+  let rotate = Math.floor(rng() * unknowns.length);
   suspects.forEach((s, i) => {
-    if (i === culpritIndex) {
-      s.possessions = unknowns.map(u => u.sampleId);
-    } else {
-      const drop = Math.floor(rng() * unknowns.length);
-      s.possessions = unknowns.filter((_, j) => j !== drop).map(u => u.sampleId);
+    const items = unknowns.map(u => ({ sampleId: u.sampleId, category: u.category, place: t(pick(PLACES[u.category] || ['bag'], rng)) }));
+    if (i !== culpritIndex) {
+      const swaps = 1 + (i % 2);
+      for (let k = 0; k < swaps && k < items.length; k++) {
+        const j = (rotate++) % items.length;
+        const truth = BY_ID[unknowns[j].sampleId];
+        const lookAlikes = candidatesFor(unknowns[j].category)
+          .filter(x => !evidenceIds.has(x.id) && distinguishingTests(x, truth).length > 0);
+        if (lookAlikes.length) items[j].sampleId = pick(lookAlikes, rng).id;
+        else items[j].missing = true;
+      }
     }
-    if (needsChromatography) {
-      s.inkId = i === culpritIndex ? culpritInk.id : inkSet[2 + (i % 2)]?.id || inkSet[2].id;
-    }
+    s.items = items.filter(x => !x.missing);
+    s.possessions = s.items.map(x => x.sampleId);
   });
 
-  const brief = tb(crime.brief, { victim: t(pick(VICTIMS, rng)), location: t(pick(LOCATIONS, rng)) });
+  // Every suspect owns a different ink and the note was written with the culprit's.
+  const needsChromatography = !!crime.chromatography;
+  if (needsChromatography) {
+    const inkSet = pickN(INKS, suspectCount, rng);
+    suspects.forEach((s, i) => { s.inkId = inkSet[i].id; });
+  }
 
-  // Labels have to exist before the questions are written, or every prompt reads
-  // "Identify white powder undefined."
-  unknowns.forEach((u, i) => { u.label = `U${i + 1}`; });
+  const victim = t(pick(VICTIMS, rng));
+  const location = t(pick(LOCATIONS, rng));
+  const brief = tb(crime.brief, { victim, location });
+  const clues = [
+    tb('Timeline: {location} was last checked at {t1}. The incident was discovered at {t2}.',
+      { location, t1: pick(TIMES_LOCKED, rng), t2: pick(TIMES_FOUND, rng) }),
+    ...(crime.clues || []).map(c => tb(c)),
+    tb('Each suspect handed over the items listed on their card. Match every item against the evidence you identify.'),
+  ];
 
-  const questions = buildQuestions({
-    crime, unknowns, suspects, culprit, inkSet, questionedInk, culpritInk, solvent, rng,
-  });
+  const questions = buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng });
 
   return {
     id: `${crime.id}-${seed}`,
     crimeType: crime.id,
     title: t(crime.title),
     brief,
+    clues,
     hint: tb(crime.questionHint),
     unknowns,
     suspects,
     culpritId: culprit.id,
-    chromatography: needsChromatography ? { questionedInkId: questionedInk.id, culpritInkId: culpritInk.id, solvent } : null,
+    chromatography: needsChromatography ? { questionedInkId: culprit.inkId, solvent } : null,
     questions,
     possiblePoints: questions.reduce((s, q) => s + q.points, 0),
   };
 }
 
-function buildQuestions({ crime, unknowns, suspects, culprit, inkSet, questionedInk, culpritInk, solvent, rng }) {
+function buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng }) {
   const questions = [];
   let n = 0;
   const add = q => questions.push({ id: `q${++n}`, ...q });
@@ -135,7 +162,9 @@ function buildQuestions({ crime, unknowns, suspects, culprit, inkSet, questioned
     const partner = unknowns[(i + 1) % unknowns.length];
     const partnerSample = partner ? BY_CATEGORY[partner.category].find(s => s.id === partner.sampleId) : null;
     const separating = partnerSample ? distinguishingTests(sample, partnerSample) : TESTS.map(t => t.id);
-    const testId = separating.find(t => resolveResult(sample, t)) || 'appearance';
+    // Prefer a bench test over plain appearance, so the question rewards running it.
+    const usable = separating.filter(id => id !== 'appearance' && id !== 'density' && resolveResult(sample, id));
+    const testId = usable.length ? pick(usable, rng) : separating.find(id => resolveResult(sample, id)) || 'appearance';
     const options = observationOptions(u.category, testId, sample);
     if (!options) return;
     add({
@@ -143,7 +172,7 @@ function buildQuestions({ crime, unknowns, suspects, culprit, inkSet, questioned
       points: 3,
       prompt: tb('What did you observe when {test} was applied to {label}?',
         { test: t(TESTS.find(x => x.id === testId).label), label: u.label }),
-      options: options.map(o => ({ value: o.token, label: t(o.text) })),
+      options: options.map(o => ({ value: o.token, label: o.vars ? tVars(o.key, o.vars) : t(o.text) })),
       answer: options.find(o => o.correct).token,
       unknownLabel: u.label,
       testId,
@@ -151,13 +180,14 @@ function buildQuestions({ crime, unknowns, suspects, culprit, inkSet, questioned
   });
 
   if (crime.chromatography) {
+    const noteInk = INK_BY_ID[culprit.inkId];
     add({
       kind: 'measurement',
       points: 5,
-      prompt: tb('Run the questioned ink in {solvent}. Report the Rf of its highest-travelling dye (2 decimal places).',
+      prompt: tb('Run the ink from the note in {solvent}. Report the Rf of its highest-travelling dye (2 decimal places).',
         { solvent: t(SOLVENTS[solvent].name) }),
-      answer: Math.max(...questionedInk.dyes.map(d => d.rf[solvent])),
-      tolerance: 0.06,
+      answer: Math.max(...noteInk.dyes.map(d => d.rf[solvent])),
+      tolerance: 0.04,
       chromatography: true,
     });
     add({
@@ -165,12 +195,13 @@ function buildQuestions({ crime, unknowns, suspects, culprit, inkSet, questioned
       points: 5,
       prompt: tb('Which suspect’s marker produced the writing on the note?'),
       options: suspects.map(s => ({ value: s.id, label: `${s.name} — ${t(INK_BY_ID[s.inkId].label)}` })),
-      answer: suspects.find(s => s.inkId === culpritInk.id).id,
+      answer: culprit.id,
     });
   }
 
-  if (crime.categories.includes('metal') || crime.categories.includes('glass')) {
-    const target = unknowns.find(u => u.category === 'metal' || u.category === 'glass');
+  const DENSITY_CATEGORIES = ['metal', 'glass', 'plastic'];
+  if (crime.categories.some(c => DENSITY_CATEGORIES.includes(c))) {
+    const target = unknowns.find(u => DENSITY_CATEGORIES.includes(u.category));
     if (target) {
       const sample = BY_CATEGORY[target.category].find(s => s.id === target.sampleId);
       add({
@@ -226,25 +257,21 @@ function buildQuestions({ crime, unknowns, suspects, culprit, inkSet, questioned
     answer: culprit.id,
   });
 
-  add({
-    kind: 'evidence',
-    points: 7,
-    multi: true,
-    prompt: tb('Select every piece of evidence that points at your suspect. Choosing evidence that does not match costs points.'),
-    options: buildEvidenceOptions(unknowns, culprit),
-    answer: culprit.possessions.slice(),
+  // One "what clears them" question per innocent suspect, up to two: the student has
+  // to say which identified evidence fails to match that suspect's belongings.
+  suspects.filter(s => s.id !== culprit.id).slice(0, 2).forEach(s => {
+    const mismatched = unknowns.filter(u => !s.possessions.includes(u.sampleId)).map(u => u.sampleId);
+    add({
+      kind: 'evidence',
+      points: 4,
+      multi: true,
+      prompt: tb('Select every piece of evidence that does NOT match {name}’s belongings. A wrong pick costs points.', { name: s.name }),
+      options: unknowns.map(u => ({ value: u.sampleId, label: `${u.label} (${labelFor(u.category)})` })),
+      answer: mismatched,
+    });
   });
 
   return questions;
-}
-
-function buildEvidenceOptions(unknowns, culprit) {
-  const matched = new Set(culprit.possessions);
-  return unknowns.map(u => ({
-    value: u.sampleId,
-    label: `${u.label} (${labelFor(u.category)})`,
-    correct: matched.has(u.sampleId),
-  }));
 }
 
 // Single-skill tasks mapped one-to-one onto the four Core Lab Expectations.

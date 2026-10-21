@@ -74,6 +74,13 @@ function resolveResult(sample, testId) {
       const action = d > 1 ? 'sinks' : 'floats';
       return { token: `ρ ${d}`, text: `Density ${d} g/cm³ — ${action} in water`, key: 'Density {d} g/cm³ — {action} in water', vars: { d, action } };
     }
+    // Dropping a solid into a beaker of water: the quick density screen before weighing.
+    case 'float': {
+      if (sample.density == null || sample.category === 'clear_liquid') return null;
+      return sample.density < 1
+        ? { token: 'floats', text: 'Floats on the water surface' }
+        : { token: 'sinks', text: 'Sinks to the bottom of the water' };
+    }
     case 'micro':
       return sample.microData
         ? { token: 'microscopic', text: sample.results?.micro?.[1] || sample.appearance }
@@ -117,13 +124,13 @@ function observationOptions(category, testId, correctSample) {
   const correct = resolveResult(correctSample, testId);
   if (!correct) return null;
   const seen = new Set([correct.token]);
-  const options = [{ token: correct.token, text: correct.text, correct: true }];
+  const options = [{ token: correct.token, text: correct.text, key: correct.key, vars: correct.vars, correct: true }];
   for (const s of pool) {
     if (options.length >= 4) break;
     const r = resolveResult(s, testId);
     if (!r || seen.has(r.token)) continue;
     seen.add(r.token);
-    options.push({ token: r.token, text: r.text, correct: false });
+    options.push({ token: r.token, text: r.text, key: r.key, vars: r.vars, correct: false });
   }
   return shuffleStable(options);
 }

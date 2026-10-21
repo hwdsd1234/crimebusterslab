@@ -48,20 +48,21 @@ function icon(name) {
 
 function spotPlateSvg(wells, selectedWell) {
   const positions = [];
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) positions.push({ id: `${'ABC'[r]}${c + 1}`, cx: 40 + c * 90, cy: 50 + r * 80 });
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) positions.push({ id: `${'ABC'[r]}${c + 1}`, cx: 55 + c * 96, cy: 52 + r * 100 });
   const cells = positions.map(w => {
     const content = wells[w.id];
     const fill = content?.mixColor || '#f4f7fa';
     const sel = selectedWell === w.id ? 'well selected' : 'well';
     return `<g class="${sel}" data-well="${w.id}">
       <circle cx="${w.cx}" cy="${w.cy}" r="30" fill="${fill}" stroke="#5b6b7c" stroke-width="2"/>
+      ${content?.contaminated ? `<circle cx="${w.cx + 22}" cy="${w.cy - 22}" r="6" fill="#b42318"/>` : ''}
       ${content?.bubbles ? `<circle cx="${w.cx - 8}" cy="${w.cy - 6}" r="4" fill="#fff" opacity=".85"/><circle cx="${w.cx + 7}" cy="${w.cy + 4}" r="3" fill="#fff" opacity=".85"/>` : ''}
       ${content?.precipitate ? `<circle cx="${w.cx}" cy="${w.cy + 8}" r="12" fill="${content.precipitate}" opacity=".8"/>` : ''}
-      <text x="${w.cx}" y="${w.cy - 40}" class="well-label" text-anchor="middle">${w.id}</text>
-      ${content?.label ? `<text x="${w.cx}" y="${w.cy + 46}" class="well-tag" text-anchor="middle">${content.label}</text>` : ''}
+      <text x="${w.cx - 34}" y="${w.cy - 26}" class="well-label" text-anchor="middle">${w.id}</text>
+      ${content?.label ? `<text x="${w.cx}" y="${w.cy + 46}" class="well-tag" text-anchor="middle">✎ ${content.label}</text>` : ''}
     </g>`;
   }).join('');
-  return `<svg viewBox="0 0 400 300" class="apparatus spotplate-live">${cells}</svg>`;
+  return `<svg viewBox="0 0 400 300" class="apparatus spotplate-live"><rect x="8" y="8" width="384" height="284" rx="26" fill="#f7f9fb" stroke="#c3ccd5" stroke-width="2"/>${cells}</svg>`;
 }
 
 // Graduation spacing a real cylinder of that size actually has.
@@ -102,27 +103,52 @@ function cylinderSvg({ capacity, view = 'eye', liquidMl = 0 }) {
   </svg>`;
 }
 
+// The strip is drawn against a millimetre ruler and nothing on it is labelled with an
+// Rf: reading distances off the ruler and dividing them is the skill being practised.
+// Paper edge is 0 mm; the baseline sits 10 mm above it.
+const STRIP_MM = 80;
 function chromatogramSvg(c) {
-  const stripH = 260, stripTop = 30, baselineY = stripTop + stripH - 60;
-  const frontY = c.frontMm != null ? baselineY - (c.frontMm / 60) * 180 : null;
+  const top = 20, bottom = 300;
+  const yFor = mm => bottom - (mm / STRIP_MM) * (bottom - top);
+  const baseMm = 10;
+  const baselineY = yFor(baseMm);
+  const frontY = c.flooded ? null : yFor(baseMm + c.frontMm);
+  const ticks = [];
+  for (let mm = 0; mm <= STRIP_MM; mm += 2) {
+    const y = yFor(mm);
+    const major = mm % 10 === 0;
+    ticks.push(`<line x1="${major ? 40 : 46}" y1="${y}" x2="56" y2="${y}" stroke="#5b6b7c" stroke-width="${major ? 1.6 : .8}"/>`);
+    if (major) ticks.push(`<text x="34" y="${y + 4}" text-anchor="end" class="apparatus-label">${mm}</text>`);
+  }
   const dyes = (c.dyes || []).map(d => {
-    const y = baselineY - (d.mm / 60) * 180;
-    return `<g><ellipse cx="110" cy="${y}" rx="16" ry="10" fill="${d.color}" opacity=".85"/>
-      <text x="140" y="${y + 5}" class="apparatus-label">${t('{dye} · Rf {rf}', { dye: t(d.name), rf: d.rf.toFixed(2) })}</text></g>`;
+    const y = c.flooded ? baselineY + 4 : yFor(baseMm + d.mm);
+    return `<ellipse cx="130" cy="${y}" rx="${c.flooded ? 22 : 15}" ry="${c.flooded ? 4 : 8}" fill="${d.color}" opacity="${c.flooded ? .35 : .85}"/>`;
   }).join('');
+  const smear = c.usedPen
+    ? `<path d="M100 ${baselineY} C 120 ${baselineY - 60}, 140 ${baselineY - 90}, 160 ${baselineY - 120}" stroke="#2b2f3a" stroke-width="5" opacity=".35" fill="none"/>`
+    : '';
+  const measured = c.measured
+    ? (c.measured.dyes || []).map((mm, i) => `<text x="166" y="${yFor((c.measured.fromBaseline ? baseMm : 0) + mm) + 4}" class="apparatus-label">${t('{n} mm', { n: mm })}</text>`).join('')
+    : '';
   return `<svg viewBox="0 0 320 320" class="apparatus">
-    <rect x="80" y="${stripTop}" width="60" height="${stripH}" fill="#fdfbf4" stroke="#8a8272" stroke-width="2"/>
-    <line x1="80" y1="${baselineY}" x2="140" y2="${baselineY}" stroke="${c.usedPen ? '#b3392f' : '#333'}" stroke-width="${c.usedPen ? 3 : 2}" stroke-dasharray="${c.usedPen ? '0' : '5 3'}"/>
-    ${frontY ? `<line x1="80" y1="${frontY}" x2="140" y2="${frontY}" stroke="#3d6f96" stroke-width="2" stroke-dasharray="4 4"/>` : ''}
-    ${dyes}
-    <text x="110" y="${baselineY + 18}" text-anchor="middle" class="apparatus-label">${c.usedPen ? t('baseline in PEN — ink ran') : t('pencil baseline')}</text>
+    <rect x="56" y="${top}" width="4" height="${bottom - top}" fill="#d9d2b5"/>
+    ${ticks.join('')}
+    <rect x="100" y="${top}" width="60" height="${bottom - top}" fill="#fdfbf4" stroke="#8a8272" stroke-width="2"/>
+    ${c.flooded ? '' : `<rect x="101" y="${frontY}" width="58" height="${baselineY - frontY}" fill="#e6f0f7" opacity=".55"/>`}
+    <rect x="94" y="${yFor(c.flooded ? 14 : 5)}" width="72" height="${bottom - yFor(c.flooded ? 14 : 5)}" fill="#bcd8ec" opacity=".55"/>
+    <line x1="100" y1="${baselineY}" x2="160" y2="${baselineY}" stroke="${c.usedPen ? '#b3392f' : '#333'}" stroke-width="${c.usedPen ? 3 : 1.5}" stroke-dasharray="${c.usedPen ? '0' : '5 3'}"/>
+    ${frontY ? `<line x1="100" y1="${frontY}" x2="160" y2="${frontY}" stroke="#3d6f96" stroke-width="2" stroke-dasharray="4 4"/>
+    <text x="166" y="${frontY - 6}" class="apparatus-label">${t('solvent front')}</text>` : ''}
+    ${smear}${dyes}${measured}
+    <text x="166" y="${baselineY + 14}" class="apparatus-label">${c.usedPen ? t('baseline in PEN — ink ran') : t('pencil baseline')}</text>
+    ${c.flooded ? `<text x="130" y="${baselineY + 34}" text-anchor="middle" class="apparatus-label warn-text">${t('solvent was above the baseline')}</text>` : ''}
   </svg>`;
 }
 
-function microscopeSvg({ sample, magnification = 40, bubbles = false }) {
+function microscopeSvg({ sample, magnification = 40, bubbles = false, measured = false }) {
   const md = sample.microData || {};
   // Higher magnification means a bigger image in the field, not a smaller one.
-  const scale = magnification === 40 ? 1.8 : 1;
+  const scale = magnification === 40 ? 1.8 : 0.5;
   const hairW = (md.diameterUm || 80) * scale * 0.9;
   const medW = (md.medullaUm || 20) * scale * 0.9;
   const cy = 160, x0 = 30, x1 = 470;
@@ -147,12 +173,13 @@ function microscopeSvg({ sample, magnification = 40, bubbles = false }) {
       <line x1="250" y1="20" x2="250" y2="300" stroke="#c8d3de" stroke-width="1"/>
       <line x1="110" y1="160" x2="390" y2="160" stroke="#c8d3de" stroke-width="1"/>
     </g>
-    <g class="reticle">
+    ${measured && magnification === 40 ? `<g class="reticle">
       <line x1="${x0}" y1="${cy + hairW / 2 + 18}" x2="${x1}" y2="${cy + hairW / 2 + 18}" stroke="#1a7f5a" stroke-width="2"/>
       <text x="250" y="${cy + hairW / 2 + 36}" text-anchor="middle" class="apparatus-label">${t('hair diameter {v} µm', { v: md.diameterUm })}</text>
       <line x1="${x0}" y1="${cy - hairW / 2 - 18}" x2="${x1}" y2="${cy - hairW / 2 - 18}" stroke="#8a4bb0" stroke-width="2"/>
       <text x="250" y="${cy - hairW / 2 - 24}" text-anchor="middle" class="apparatus-label">${t('medulla {v} µm', { v: md.medullaUm })}</text>
-    </g>
+    </g>` : ''}
+    <text x="490" y="310" text-anchor="end" class="apparatus-label">${magnification}×</text>
   </svg>`;
 }
 
@@ -208,13 +235,30 @@ function burnSvg(result) {
   </svg>`;
 }
 
+// A beaker of water with the item either floating at the surface or resting on the bottom.
+function beakerSvg(result) {
+  const item = result === 'floats'
+    ? '<rect x="130" y="92" width="40" height="14" rx="3" fill="#c9b48a" stroke="#7a6a55" stroke-width="1.5"/>'
+    : result === 'sinks'
+      ? '<rect x="130" y="176" width="40" height="14" rx="3" fill="#8a8f99" stroke="#4a4f59" stroke-width="1.5"/>'
+      : '';
+  return `<svg viewBox="0 0 300 220" class="apparatus">
+    <path d="M90 40v150a10 10 0 0 0 10 10h100a10 10 0 0 0 10-10V40" fill="#eef5fb" stroke="#5b6b7c" stroke-width="2"/>
+    <rect x="91" y="100" width="118" height="99" fill="#9ecae6" opacity=".6"/>
+    <path d="M91 100h118" stroke="#3d6f96" stroke-width="2"/>
+    ${[60, 100, 140, 180].map(y => `<line x1="90" y1="${y}" x2="104" y2="${y}" stroke="#5b6b7c"/>`).join('')}
+    ${item}
+  </svg>`;
+}
+
 function balanceSvg(mass) {
   return `<svg viewBox="0 0 300 180" class="apparatus">
     <rect x="40" y="120" width="220" height="30" rx="4" fill="#e7edf2" stroke="#5b6b7c" stroke-width="2"/>
     <rect x="110" y="60" width="80" height="60" rx="4" fill="#f6f9fb" stroke="#5b6b7c" stroke-width="2"/>
-    <text x="150" y="98" text-anchor="middle" class="apparatus-readout">${mass == null ? '—' : mass.toFixed(2) + ' g'}</text>
+    <rect x="122" y="40" width="56" height="8" rx="2" fill="#fdfbf4" stroke="#8a8272"/>
+    <text x="150" y="98" text-anchor="middle" class="apparatus-readout">${mass == null ? '0.00 g' : mass.toFixed(2) + ' g'}</text>
   </svg>`;
 }
 
-LAB.svg = { ICONS: ICONS, icon: icon, spotPlateSvg: spotPlateSvg, cylinderSvg: cylinderSvg, chromatogramSvg: chromatogramSvg, microscopeSvg: microscopeSvg, phStripSvg: phStripSvg, conductivitySvg: conductivitySvg, thermometerSvg: thermometerSvg, burnSvg: burnSvg, balanceSvg: balanceSvg };
+LAB.svg = { ICONS: ICONS, icon: icon, spotPlateSvg: spotPlateSvg, cylinderSvg: cylinderSvg, chromatogramSvg: chromatogramSvg, microscopeSvg: microscopeSvg, phStripSvg: phStripSvg, conductivitySvg: conductivitySvg, thermometerSvg: thermometerSvg, burnSvg: burnSvg, beakerSvg: beakerSvg, balanceSvg: balanceSvg };
 })(window.LAB);

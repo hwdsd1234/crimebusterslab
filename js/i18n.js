@@ -13,11 +13,12 @@ const { ZH_DEVICES } = LAB;
 const { ZH_SAMPLES } = LAB;
 const { ZH_BIO } = LAB;
 const { ZH_CASE } = LAB;
+const { ZH_SIM } = LAB;
 
 const LANGS = ['both', 'en', 'zh'];
 const STORAGE_KEY = 'cb-lab-lang';
 
-const ZH = Object.assign({}, ZH_UI, ZH_DEVICES, ZH_SAMPLES, ZH_BIO, ZH_CASE);
+const ZH = Object.assign({}, ZH_UI, ZH_DEVICES, ZH_SAMPLES, ZH_BIO, ZH_CASE, ZH_SIM);
 
 let lang = 'both';
 try {

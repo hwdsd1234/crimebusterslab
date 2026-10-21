@@ -2,12 +2,12 @@
 'use strict';
 
 const { state, ppePoints } = LAB;
-const { DEVICES } = LAB;
+const { DEVICES, EVENT_PROVIDED } = LAB;
 const { t } = LAB;
 
 function techniquePoints() {
   let earned = 0, possible = 0;
-  for (const d of DEVICES) {
+  for (const d of [...DEVICES, ...EVENT_PROVIDED]) {
     for (const c of d.checks || []) {
       possible += c.points;
       if (state.technique[c.id] === 'ok') earned += c.points;
@@ -85,5 +85,5 @@ function skillHeatmap() {
   return { byTest, failedChecks };
 }
 
-Object.assign(LAB, { techniquePoints: techniquePoints, grade: grade, skillHeatmap: skillHeatmap });
+Object.assign(LAB, { techniquePoints: techniquePoints, gradeQuestion: gradeQuestion, grade: grade, skillHeatmap: skillHeatmap });
 })(window.LAB);
