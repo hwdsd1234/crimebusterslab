@@ -140,6 +140,10 @@
 .benchlog li { margin-bottom: .25rem; color: var(--ink-soft); }
 .benchlog li.good { color: var(--accent); }
 .benchlog li.bad { color: var(--danger); }
+/* A significant result: the line the verdict hangs on, so it is the loudest in the log. */
+.benchlog li.key, .result-card p.key { color: var(--key); font-size: 1.05rem; font-weight: 700; line-height: 1.35; }
+.benchlog li.key::marker { color: var(--key); }
+.key-swatch { color: var(--key); }
 
 /* ── PPE ── */
 .ppe-figure { display: flex; flex-wrap: wrap; gap: .45rem; }

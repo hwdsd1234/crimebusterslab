@@ -24,6 +24,7 @@ function freshTools() {
 
 const state = {
   mode: 'sandbox',
+  difficulty: 'normal',
   seed: 0,
   case: null,
   activeDrill: null,
@@ -135,6 +136,25 @@ function cleanTool(toolId) {
   }
 }
 
+// A result is significant when it tells this unknown apart from something it could be
+// mixed up with: in a case, the other evidence and the suspects' look-alike items of
+// the same kind; on the free bench, any other sample of that kind. Those lines are
+// the ones the report and the verdict hang on, so the log makes them stand out.
+function isSignificant(label, testId) {
+  const { BY_ID, candidatesFor, distinguishingTests } = LAB;
+  const u = (state.unknowns || []).find(x => x.label === label);
+  const sample = u && BY_ID[u.sampleId];
+  if (!sample) return false;
+  const rivals = state.case
+    ? new Set([
+        ...state.case.unknowns.filter(o => o.category === u.category).map(o => o.sampleId),
+        ...state.case.suspects.flatMap(s => s.items).filter(x => x.category === u.category).map(x => x.sampleId),
+      ])
+    : new Set(candidatesFor(u.category).map(x => x.id));
+  rivals.delete(sample.id);
+  return [...rivals].some(id => BY_ID[id] && distinguishingTests(sample, BY_ID[id]).includes(testId));
+}
+
 // Observations are stored English-canonical: a recorded result keeps the language
 // it was produced in only in the bench log, and re-renders in any language.
 function recordObservation(label, testId, result, { valid = true, note: n } = {}) {
@@ -151,7 +171,7 @@ function recordObservation(label, testId, result, { valid = true, note: n } = {}
     label,
     test: t(TEST_NAMES[testId] || testId),
     text: observationText({ key, vars: result.vars }),
-  }), valid ? 'info' : 'bad');
+  }), !valid ? 'bad' : isSignificant(label, testId) ? 'key' : 'info');
 }
 
 function observationText(record) {
@@ -176,7 +196,7 @@ function ppePoints() {
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      mode: state.mode, seed: state.seed,
+      mode: state.mode, seed: state.seed, difficulty: state.difficulty,
       drillId: state.mode === 'drill' ? state.activeDrill?.id || null : null,
       ppe: state.ppe, answers: state.answers, submitted: state.submitted,
       bench: {

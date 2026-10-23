@@ -283,7 +283,7 @@ function displacement(target) {
   recordMeasurement(target, 'v0', STOCK_ML);
   recordMeasurement(target, 'v1', +(STOCK_ML + vol + parallax).toFixed(1));
   note(t('{label} dropped into {v0} mL of water: level rose to {v1} mL', { label: target, v0: STOCK_ML.toFixed(1), v1: (STOCK_ML + vol + parallax).toFixed(1) }),
-    parallax ? 'bad' : 'info');
+    parallax ? 'bad' : 'key');
 }
 
 function measureLiquid(target) {
@@ -310,7 +310,7 @@ function weigh(target) {
   mass = +mass.toFixed(2);
   bal.reading = mass;
   recordMeasurement(target, 'mass', mass);
-  note(t('{label} on the balance: {m} g', { label: target, m: mass.toFixed(2) }), bal.tared ? 'info' : 'bad');
+  note(t('{label} on the balance: {m} g', { label: target, m: mass.toFixed(2) }), bal.tared ? 'key' : 'bad');
 }
 
 function develop(sourceId, solvent, method, solventAbove = false) {
@@ -351,7 +351,7 @@ function measureStrip(how) {
   note(t('Ruler on {ink} ({solvent}): solvent front {front} mm; spots at {spots} mm', {
     ink: inkSource(c.sourceId).label, solvent: t(SOLVENTS[c.solvent].name),
     front: c.measured.front, spots: c.measured.dyes.join(', '),
-  }), fromBaseline && how !== 'cm' ? 'good' : 'bad');
+  }), fromBaseline && how !== 'cm' ? 'key' : 'bad');
 }
 
 function measureMicro() {
@@ -365,7 +365,7 @@ function measureMicro() {
     recordMeasurement(m.label, 'diaUm', s.microData.diameterUm);
     recordMeasurement(m.label, 'medUm', s.microData.medullaUm);
     m.measured = true;
-    note(t('Reticle on {label}: hair diameter {d} µm, medulla width {w} µm', { label: m.label, d: s.microData.diameterUm, w: s.microData.medullaUm }), valid ? 'good' : 'bad');
+    note(t('Reticle on {label}: hair diameter {d} µm, medulla width {w} µm', { label: m.label, d: s.microData.diameterUm, w: s.microData.medullaUm }), valid ? 'key' : 'bad');
   }
   const r = resolveResult(s, 'micro');
   if (r) recordObservation(m.label, 'micro', r, { valid });

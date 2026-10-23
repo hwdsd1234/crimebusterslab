@@ -12,6 +12,7 @@ const { DRILLS } = LAB;
 const { ui, inkSource } = LAB;
 const { t, tb } = LAB;
 
+const DIFFICULTY_LABEL = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
 const TEST_LABEL = Object.fromEntries(TESTS.map(x => [x.id, x.label]));
 const MARKS = [
   { id: 'suspect', label: 'Suspect' },
@@ -37,7 +38,7 @@ function caseSection() {
   }
   const c = state.case;
   return `<section class="cf-section">
-    <p class="cf-kicker">${t('Case file')} · #${state.seed}</p>
+    <p class="cf-kicker">${t('Case file')} · #${state.seed} · ${t(DIFFICULTY_LABEL[c.difficulty] || 'Normal')}</p>
     <h2 class="cf-title">${c.title}</h2>
     <p class="brief">${c.brief}</p>
     <ul class="clues">${(c.clues || []).map(x => `<li>${x}</li>`).join('')}</ul>
@@ -136,6 +137,7 @@ function logSection() {
     ${entries.length
       ? `<ul class="benchlog">${entries.map(l => `<li class="${l.kind}">${l.text}</li>`).join('')}</ul>`
       : `<p class="empty">${t('Nothing recorded yet.')}</p>`}
+    ${entries.some(l => l.kind === 'key') ? `<p class="hint"><span class="key-swatch">■</span> ${t('Key result: tells this evidence apart from a look-alike')}</p>` : ''}
   </section>`;
 }
 

@@ -20,6 +20,15 @@ function pickDistinguishable(pool, n, rng) {
   return chosen;
 }
 
+// A look-alike for an innocent suspect's item. 'far' takes one that many tests tell
+// apart from the evidence, 'near' one that only a single test separates.
+function pickLookAlike(list, truth, how, rng) {
+  if (how === 'any') return pick(list, rng);
+  const gap = x => distinguishingTests(x, truth).length;
+  const best = how === 'far' ? Math.max(...list.map(gap)) : Math.min(...list.map(gap));
+  return pick(list.filter(x => gap(x) === best), rng);
+}
+
 function pick(list, rng) {
   return list[Math.floor(rng() * list.length)];
 }
@@ -28,7 +37,18 @@ function pickN(list, n, rng) {
   return shuffleStable(list, Math.floor(rng() * 1e9) + 1).slice(0, n);
 }
 
-function generateCase(seed) {
+// How hard a case is. Easy cases have fewer suspects, each innocent one differing
+// from the evidence in two places with an obvious look-alike, and wider answer
+// tolerances. Hard cases have more suspects, each one item off with the closest
+// look-alike there is, more unverified alibis, and tighter tolerances.
+const DIFFICULTY = {
+  easy: { suspects: 3, swaps: () => 2, shaky: 1, lookAlike: 'far', tolerance: 1.5 },
+  normal: { suspects: 4, swaps: i => 1 + (i % 2), shaky: 1, lookAlike: 'any', tolerance: 1 },
+  hard: { suspects: 5, swaps: () => 1, shaky: 2, lookAlike: 'near', tolerance: 0.7 },
+};
+
+function generateCase(seed, difficulty = 'normal') {
+  const level = DIFFICULTY[difficulty] || DIFFICULTY.normal;
   const rng = mulberry32(seed);
   const crime = pick(CRIME_TYPES, rng);
 
@@ -48,25 +68,26 @@ function generateCase(seed) {
 
   const solvent = pick(Object.keys(SOLVENTS), rng);
 
-  const suspectCount = 4;
+  const suspectCount = level.suspects;
   const firstNames = pickN(FIRST_NAMES, suspectCount, rng);
   const lastNames = pickN(LAST_NAMES, suspectCount, rng);
   const roles = pickN(ROLES, suspectCount, rng);
   const motives = pickN(MOTIVES, suspectCount, rng);
 
   const culpritIndex = Math.floor(rng() * suspectCount);
-  // The culprit and one innocent suspect have only their own word for an alibi.
-  const shakyIndex = (culpritIndex + 1 + Math.floor(rng() * (suspectCount - 1))) % suspectCount;
+  // The culprit and one or more innocent suspects have only their own word for an alibi.
+  const start = culpritIndex + 1 + Math.floor(rng() * (suspectCount - 1));
+  const shakyIndexes = [culpritIndex, ...Array.from({ length: level.shaky }, (_, k) => (start + k) % suspectCount)];
   const verified = pickN(ALIBIS_VERIFIED, suspectCount, rng);
-  const unverified = pickN(ALIBIS_UNVERIFIED, 2, rng);
+  const unverified = pickN(ALIBIS_UNVERIFIED, shakyIndexes.length, rng);
 
   const suspects = firstNames.map((fn, i) => {
-    const shaky = i === culpritIndex || i === shakyIndex;
+    const shaky = shakyIndexes.includes(i);
     return {
       id: `s${i}`,
       name: `${fn} ${lastNames[i]}`,
       role: t(roles[i]),
-      alibi: t(shaky ? unverified[i === culpritIndex ? 0 : 1] : verified[i]),
+      alibi: t(shaky ? unverified[shakyIndexes.indexOf(i)] : verified[i]),
       alibiVerified: !shaky,
       motive: t(motives[i]),
       items: [],
@@ -85,13 +106,13 @@ function generateCase(seed) {
   suspects.forEach((s, i) => {
     const items = unknowns.map(u => ({ sampleId: u.sampleId, category: u.category, place: t(pick(PLACES[u.category] || ['bag'], rng)) }));
     if (i !== culpritIndex) {
-      const swaps = 1 + (i % 2);
+      const swaps = level.swaps(i);
       for (let k = 0; k < swaps && k < items.length; k++) {
         const j = (rotate++) % items.length;
         const truth = BY_ID[unknowns[j].sampleId];
         const lookAlikes = candidatesFor(unknowns[j].category)
           .filter(x => !evidenceIds.has(x.id) && distinguishingTests(x, truth).length > 0);
-        if (lookAlikes.length) items[j].sampleId = pick(lookAlikes, rng).id;
+        if (lookAlikes.length) items[j].sampleId = pickLookAlike(lookAlikes, truth, level.lookAlike, rng).id;
         else items[j].missing = true;
       }
     }
@@ -116,11 +137,12 @@ function generateCase(seed) {
     tb('Each suspect handed over the items listed on their card. Match every item against the evidence you identify.'),
   ];
 
-  const questions = buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng });
+  const questions = buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng, tolerance: level.tolerance });
 
   return {
-    id: `${crime.id}-${seed}`,
+    id: `${crime.id}-${seed}-${difficulty}`,
     crimeType: crime.id,
+    difficulty,
     title: t(crime.title),
     brief,
     clues,
@@ -134,7 +156,7 @@ function generateCase(seed) {
   };
 }
 
-function buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng }) {
+function buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng, tolerance = 1 }) {
   const questions = [];
   let n = 0;
   const add = q => questions.push({ id: `q${++n}`, ...q });
@@ -187,7 +209,7 @@ function buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng }) {
       prompt: tb('Run the ink from the note in {solvent}. Report the Rf of its highest-travelling dye (2 decimal places).',
         { solvent: t(SOLVENTS[solvent].name) }),
       answer: Math.max(...noteInk.dyes.map(d => d.rf[solvent])),
-      tolerance: 0.04,
+      tolerance: +(0.04 * tolerance).toFixed(3),
       chromatography: true,
     });
     add({
@@ -209,7 +231,7 @@ function buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng }) {
         points: 5,
         prompt: tb('Determine the density of {label} in g/cm³ (2 decimal places).', { label: target.label }),
         answer: sample.density,
-        tolerance: 0.15,
+        tolerance: +(0.15 * tolerance).toFixed(3),
         unknownLabel: target.label,
         measurement: 'density',
       });
@@ -226,7 +248,7 @@ function buildQuestions({ crime, unknowns, suspects, culprit, solvent, rng }) {
         prompt: tb('Measure the hair in {label} and report its medulla index (medulla width ÷ hair diameter, 2 decimal places).',
           { label: target.label }),
         answer: sample.microData.medullaIndex,
-        tolerance: 0.08,
+        tolerance: +(0.08 * tolerance).toFixed(3),
         unknownLabel: target.label,
         measurement: 'medullaIndex',
       });
@@ -308,5 +330,5 @@ const DRILLS = [
   },
 ];
 
-Object.assign(LAB, { generateCase: generateCase, DRILLS: DRILLS });
+Object.assign(LAB, { generateCase: generateCase, DRILLS: DRILLS, DIFFICULTY: DIFFICULTY });
 })(window.LAB);

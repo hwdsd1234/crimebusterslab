@@ -44,6 +44,7 @@ function redraw() {
   renderScoreChip();
   renderModeBar();
   renderLangBar();
+  renderDifficultyBar();
 }
 
 // Until a case report is submitted the chip shows progress, not a score, so it cannot
@@ -65,6 +66,10 @@ function renderModeBar() {
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === state.mode));
 }
 
+function renderDifficultyBar() {
+  document.querySelectorAll('[data-difficulty]').forEach(b => b.classList.toggle('active', b.dataset.difficulty === state.difficulty));
+}
+
 function renderLangBar() {
   document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('active', b.dataset.lang === getLang()));
 }
@@ -74,7 +79,7 @@ function renderLangBar() {
 // same answers — the bench and the marks already on the board are untouched.
 function rebuildCase() {
   if (state.mode !== 'case' || state.seed == null) return;
-  state.case = generateCase(state.seed);
+  state.case = generateCase(state.seed, state.difficulty);
   state.unknowns = state.case.unknowns;
 }
 
@@ -91,7 +96,7 @@ function openDevice(id) {
 function startCase(seed) {
   state.seed = seed;
   state.mode = 'case';
-  state.case = generateCase(seed);
+  state.case = generateCase(seed, state.difficulty);
   state.unknowns = state.case.unknowns;
   resetBench();
   note(t('Case loaded: {title}', { title: state.case.title }), 'good');
@@ -249,6 +254,19 @@ $('#langSwitch').addEventListener('click', e => {
   redraw();
 });
 
+// A new difficulty only changes cases: the current one is regenerated from the same
+// seed at the new level, which clears the bench, so ask before throwing work away.
+$('#difficulty').addEventListener('click', e => {
+  const btn = e.target.closest('[data-difficulty]');
+  if (!btn || btn.dataset.difficulty === state.difficulty) return;
+  const busy = state.mode === 'case' && (Object.keys(state.observations).length || Object.keys(state.answers).length);
+  if (busy && !window.confirm(t('Changing the difficulty restarts this case and clears the bench. Continue?'))) return;
+  state.difficulty = btn.dataset.difficulty;
+  if (state.mode === 'case') startCase(state.seed);
+  else redraw();
+  save();
+});
+
 $('#newCase').addEventListener('click', () => startCase(Math.floor(Math.random() * 1e9)));
 
 $('#seedCase').addEventListener('click', () => {
@@ -269,6 +287,7 @@ $('#exportCsv').addEventListener('click', () => {
 syncDocumentLang();
 
 const saved = load();
+if (saved?.difficulty) state.difficulty = saved.difficulty;
 if (saved?.mode === 'case' && saved.seed) startCase(saved.seed);
 else if (saved?.mode === 'drill') startDrill(DRILLS.find(d => d.id === saved.drillId) || DRILLS[0]);
 else startSandbox();
