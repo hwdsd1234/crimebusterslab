@@ -1,7 +1,7 @@
 (function (LAB) {
 'use strict';
 
-const { DEVICES, EVENT_PROVIDED, GROUPS } = LAB;
+const { DEVICES, EVENT_PROVIDED, HELPERS, GROUPS } = LAB;
 const { state } = LAB;
 const { svg } = LAB;
 const { ui } = LAB;
@@ -18,6 +18,10 @@ function badge(id) {
   if (id === 'slide' && state.microscope) return { kind: 'busy', text: state.microscope.label };
   if (id === 'balance' && tools.balance.tared) return { kind: 'ok', text: '0.00' };
   if (id === 'pencil' && state.chromaPrep.baseline === 'pencil') return { kind: 'ok', text: '✓' };
+  if (id === 'id_sheet') {
+    const right = Object.values(state.guesses).filter(g => g.correct).length;
+    return { kind: right ? 'ok' : 'warn', text: `${right}/${(state.unknowns || []).length}` };
+  }
   if (id === 'kit_box') {
     const on = Object.values(state.ppe).filter(Boolean).length;
     return { kind: on ? 'ok' : 'warn', text: `${on}/${Object.keys(state.ppe).length}` };
@@ -26,8 +30,10 @@ function badge(id) {
 }
 
 function renderShelf(root) {
-  const all = [...DEVICES, ...EVENT_PROVIDED];
-  root.innerHTML = `<h2 class="shelf-title">${t('Equipment')}</h2><div class="shelf-groups">` + GROUPS.map(group => {
+  const all = [...DEVICES, ...EVENT_PROVIDED, ...HELPERS];
+  // The ID sheet is a sandbox practice aid, listed first so it is easy to find.
+  const groups = state.mode === 'sandbox' ? [{ name: 'Practice', hint: 'Guess what each unknown is', ids: ['id_sheet'] }, ...GROUPS] : GROUPS;
+  root.innerHTML = `<h2 class="shelf-title">${t('Equipment')}</h2><div class="shelf-groups">` + groups.map(group => {
     const items = group.ids.map(id => all.find(d => d.id === id)).filter(Boolean);
     if (!items.length) return '';
     // A device with withDevice is listed under another one instead of getting its own

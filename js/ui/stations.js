@@ -7,7 +7,7 @@
 // to show those choices as chips, prefilled with whatever you picked last.
 
 const { state, note, markTechnique, useTool, cleanTool, recordObservation, recordMeasurement, ppePoints, observationText } = LAB;
-const { REAGENTS, TESTS, BY_ID, resolveResult, INKS, INK_BY_ID, SOLVENTS, labelFor } = LAB;
+const { REAGENTS, TESTS, BY_ID, resolveResult, INKS, INK_BY_ID, SOLVENTS, labelFor, candidatesFor, distinguishingTests } = LAB;
 const { DEVICE_BY_ID, PPE } = LAB;
 const svg = LAB.svg;
 const { t, tb } = LAB;
@@ -569,6 +569,78 @@ function toggleAction(deviceId, actionId) {
   return false;
 }
 
+// ───────────────────────── ID sheet (sandbox) ─────────────────────────
+
+// Checks a guess for one unknown. A wrong guess is crossed off and the sheet says
+// which test would have told the two apart, so the next try is an informed one.
+function checkGuess(label, sampleId) {
+  const u = unknowns().find(x => x.label === label);
+  const guess = BY_ID[sampleId];
+  if (!u || !guess) return;
+  const g = state.guesses[label] ||= { tried: [], correct: false };
+  if (g.correct) return;
+  if (!g.tried.includes(sampleId)) g.tried.push(sampleId);
+  if (sampleId === u.sampleId) {
+    g.correct = true;
+    note(t('ID sheet: {label} is {name} — correct!', { label, name: t(guess.name) }), 'good');
+  } else {
+    note(t('ID sheet: {label} is not {name} — try again', { label, name: t(guess.name) }), 'bad');
+  }
+}
+
+function resetGuess(label) {
+  delete state.guesses[label];
+}
+
+function guessHint(u, g) {
+  const last = BY_ID[g.tried[g.tried.length - 1]];
+  const tests = distinguishingTests(BY_ID[u.sampleId], last).filter(id => id !== 'appearance');
+  if (!tests.length) return '';
+  return t('Hint: {tests} would tell it apart from {name}.', {
+    tests: tests.slice(0, 2).map(id => t(TEST_LABEL[id])).join(' / '),
+    name: t(last.name),
+  });
+}
+
+function idSheetView() {
+  const rows = unknowns().map(u => {
+    const g = state.guesses[u.label] || { tried: [], correct: false };
+    const truth = BY_ID[u.sampleId];
+    const options = candidatesFor(u.category);
+    const wrong = g.tried.filter(id => id !== u.sampleId);
+    let status = '';
+    if (g.correct) {
+      status = `<p class="guess-status good">✓ ${t('Correct — {name}', { name: t(truth.name) })}
+        <small>${t('{n} tries', { n: g.tried.length })}</small></p>`;
+    } else if (wrong.length) {
+      status = `<p class="guess-status bad">✗ ${t('Not quite — try again')}</p>
+        ${guessHint(u, g) ? `<p class="hint">${guessHint(u, g)}</p>` : ''}`;
+    }
+    return `<li class="guess ${g.correct ? 'correct' : wrong.length ? 'wrong' : ''}">
+      <div class="guess-head"><strong>${u.label}</strong> <span>${labelFor(u.category)}</span></div>
+      ${g.correct ? '' : `<div class="guess-form">
+        <select data-guess-for="${u.label}" aria-label="${t('What is {label}?', { label: u.label })}">
+          <option value="">${t('— what is it? —')}</option>
+          ${options.map(s => `<option value="${s.id}" ${wrong.includes(s.id) ? 'disabled' : ''}>${t(s.name)}${wrong.includes(s.id) ? ' ✗' : ''}</option>`).join('')}
+        </select>
+        <button class="btn primary small" data-guess="${u.label}">${t('Check')}</button>
+      </div>`}
+      ${wrong.length ? `<p class="tried">${wrong.map(id => `<s>${t(BY_ID[id].name)}</s>`).join(' ')}</p>` : ''}
+      ${status}
+      ${g.correct || wrong.length ? `<button class="link-btn" data-guess-reset="${u.label}">${t('Start over')}</button>` : ''}
+    </li>`;
+  }).join('');
+  const right = unknowns().filter(u => state.guesses[u.label]?.correct).length;
+  return `<div class="station">
+    <header class="station-head">
+      <div><h2>${t('ID Sheet')}</h2>
+      <p class="station-use">${t('{right} of {total} identified', { right, total: unknowns().length })}</p></div>
+      <p class="station-hint">${tb('Run tests on the bench, then write down what you think each unknown is. A wrong guess is crossed off — try again.')}</p>
+    </header>
+    <ul class="guess-list">${rows}</ul>
+  </div>`;
+}
+
 // ───────────────────────── rendering ─────────────────────────
 
 function actionLabel(act) {
@@ -665,6 +737,8 @@ function wellReadout() {
 }
 
 const STATIONS = {
+
+  identify: { view: idSheetView },
 
   kit: {
     view: () => {
@@ -868,5 +942,5 @@ const STATIONS = {
   },
 };
 
-Object.assign(LAB, { ui: ui, unknowns: unknowns, sampleFor: sampleFor, categoryFor: categoryFor, STATIONS: STATIONS, TOOLS: TOOLS, actionsFor: actionsFor, runAction: runAction, toggleAction: toggleAction, setParam: setParam, inkSource: inkSource, inkSources: inkSources });
+Object.assign(LAB, { checkGuess: checkGuess, resetGuess: resetGuess, ui: ui, unknowns: unknowns, sampleFor: sampleFor, categoryFor: categoryFor, STATIONS: STATIONS, TOOLS: TOOLS, actionsFor: actionsFor, runAction: runAction, toggleAction: toggleAction, setParam: setParam, inkSource: inkSource, inkSources: inkSources });
 })(window.LAB);

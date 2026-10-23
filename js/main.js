@@ -5,7 +5,7 @@ const { state, commit, resetBench, note, save, load, restoreBench } = LAB;
 const { generateCase, DRILLS } = LAB;
 const { DEVICE_BY_ID } = LAB;
 const { renderShelf } = LAB;
-const { STATIONS, ui, toggleAction, runAction, setParam } = LAB;
+const { STATIONS, ui, toggleAction, runAction, setParam, checkGuess, resetGuess } = LAB;
 const { renderQuestions, renderTechnique, renderCaseFile } = LAB;
 const { t, tb, getLang, setLang, syncDocumentLang } = LAB;
 
@@ -153,6 +153,16 @@ shelf.addEventListener('click', e => {
 // Stage clicks: a well in the drawing, an action in the tool menu, a choice chip, or
 // the button that carries an action out with the chosen options.
 stage.addEventListener('click', e => {
+  const guess = e.target.closest('[data-guess]');
+  if (guess) {
+    const pick = stage.querySelector(`[data-guess-for="${guess.dataset.guess}"]`)?.value;
+    if (!pick) return;
+    checkGuess(guess.dataset.guess, pick);
+    commit(); save(); redraw();
+    return;
+  }
+  const again = e.target.closest('[data-guess-reset]');
+  if (again) { resetGuess(again.dataset.guessReset); save(); redraw(); return; }
   const well = e.target.closest('[data-well]');
   if (well) { ui.well = well.dataset.well; redraw(); return; }
   const chip = e.target.closest('[data-param]');

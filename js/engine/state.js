@@ -42,6 +42,7 @@ const state = {
   retrieved: {},
   volumeMeasures: null,
   chromaPrep: { baseline: null },
+  guesses: {},       // sandbox ID sheet: label -> { tried: [sampleId], correct }
 
   // The student's own deductions: suspect marks and a free-text notepad.
   notes: { marks: {}, text: '' },
@@ -72,6 +73,7 @@ function resetBench() {
   state.score = { earned: 0, possible: 0 };
   state.volumeMeasures = null;
   state.chromaPrep = { baseline: null };
+  state.guesses = {};
   state.notes = { marks: {}, text: '' };
   state.tools = freshTools();
   state.clock = { startedAt: Date.now(), elapsedMs: 0 };
@@ -204,7 +206,7 @@ function save() {
         chromatograms: state.chromatograms, microscope: state.microscope,
         burnResults: state.burnResults, retrieved: state.retrieved,
         technique: state.technique, tools: state.tools, log: state.log,
-        volumeMeasures: state.volumeMeasures, chromaPrep: state.chromaPrep, notes: state.notes,
+        volumeMeasures: state.volumeMeasures, chromaPrep: state.chromaPrep, notes: state.notes, guesses: state.guesses,
       },
     }));
   } catch { /* storage unavailable — the lab still runs in memory */ }
@@ -225,6 +227,7 @@ function restoreBench(bench) {
   state.tools = { ...freshTools(), ...(bench.tools || {}) };
   state.volumeMeasures = bench.volumeMeasures || null;
   state.chromaPrep = bench.chromaPrep || { baseline: null };
+  state.guesses = bench.guesses || {};
   state.notes = { marks: {}, text: '', ...(bench.notes || {}) };
   state.log = bench.log || [];
   commit();

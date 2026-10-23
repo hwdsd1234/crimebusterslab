@@ -103,7 +103,12 @@ const EVENT_PROVIDED = [
     ] },
 ];
 
-const DEVICE_BY_ID = Object.fromEntries([...DEVICES, ...EVENT_PROVIDED].map(d => [d.id, d]));
+// Practice aids that are not on the equipment list, so they carry no technique checks.
+const HELPERS = [
+  { id: 'id_sheet', name: 'ID Sheet', group: 'Practice', use: 'Write down what you think each unknown is and check it', station: 'identify', icon: 'idsheet', sandboxOnly: true },
+];
+
+const DEVICE_BY_ID = Object.fromEntries([...DEVICES, ...EVENT_PROVIDED, ...HELPERS].map(d => [d.id, d]));
 // The shelf is ordered by how often a test comes up in a case, so the spot-plate
 // tests every unknown needs sit at the top and the rarer measurements sit below.
 const GROUPS = [
@@ -149,5 +154,5 @@ const TECHNIQUE_FAILURES = {
   tare_balance: 'Weighed without zeroing the balance — the weighing paper is counted in the mass',
 };
 
-Object.assign(LAB, { DEVICES: DEVICES, EVENT_PROVIDED: EVENT_PROVIDED, DEVICE_BY_ID: DEVICE_BY_ID, GROUPS: GROUPS, CHECK_LABELS: CHECK_LABELS, PPE: PPE, TECHNIQUE_FAILURES: TECHNIQUE_FAILURES });
+Object.assign(LAB, { DEVICES: DEVICES, EVENT_PROVIDED: EVENT_PROVIDED, HELPERS: HELPERS, DEVICE_BY_ID: DEVICE_BY_ID, GROUPS: GROUPS, CHECK_LABELS: CHECK_LABELS, PPE: PPE, TECHNIQUE_FAILURES: TECHNIQUE_FAILURES });
 })(window.LAB);

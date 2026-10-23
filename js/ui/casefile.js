@@ -98,6 +98,7 @@ function evidenceSection() {
             ${u.label === ui.target ? `<em>${t('on the bench')}</em>` : ''}
           </button>
           ${u.where ? `<p class="where">${u.where}</p>` : ''}
+          ${state.mode === 'sandbox' && state.guesses[u.label]?.correct ? `<p class="id-done">✓ ${t('Identified: {name}', { name: t(BY_ID[u.sampleId].name) })}</p>` : ''}
           ${rows.length ? `<ul class="findings">${rows.join('')}</ul>` : `<p class="empty">${t('No tests run yet.')}</p>`}
         </article>`;
       }).join('')}

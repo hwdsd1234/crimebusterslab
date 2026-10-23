@@ -145,6 +145,24 @@
 .benchlog li.key::marker { color: var(--key); }
 .key-swatch { color: var(--key); }
 
+/* sandbox ID sheet */
+.guess-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: .6rem; }
+.guess { border: 1px solid var(--line); border-radius: 10px; padding: .65rem .75rem; background: var(--panel-2); }
+.guess.correct { border-color: var(--accent); background: var(--accent-soft); }
+.guess.wrong { border-color: var(--danger); background: var(--danger-soft); }
+.guess-head { margin-bottom: .4rem; }
+.guess-head span { color: var(--ink-soft); font-size: .82rem; }
+.guess-form { display: flex; gap: .4rem; }
+.guess-form select { flex: 1; min-width: 0; padding: .38rem .45rem; border: 1px solid var(--line); border-radius: 7px; font: inherit; font-size: .84rem; background: #fff; color: var(--ink); }
+.guess-status { margin: .45rem 0 .1rem; font-weight: 700; font-size: .9rem; }
+.guess-status.good { color: var(--accent); }
+.guess-status.bad { color: var(--danger); }
+.guess-status small { font-weight: 400; color: var(--ink-soft); margin-left: .35rem; }
+.guess .tried { margin: .4rem 0 0; font-size: .8rem; color: var(--danger); display: flex; flex-wrap: wrap; gap: .2rem .6rem; }
+.guess .hint { margin: .2rem 0 0; }
+.link-btn { border: 0; background: none; padding: 0; margin-top: .35rem; color: var(--ink-soft); font: inherit; font-size: .76rem; text-decoration: underline; cursor: pointer; }
+.id-done { margin: .2rem 0 .35rem; color: var(--accent); font-weight: 700; font-size: .84rem; }
+
 /* ── PPE ── */
 .ppe-figure { display: flex; flex-wrap: wrap; gap: .45rem; }
 .ppe-item {

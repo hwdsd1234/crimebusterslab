@@ -11,6 +11,7 @@ const wrap = (body, vb = '0 0 48 48') =>
 const STROKE = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 
 const ICONS = {
+  idsheet: `<rect x="11" y="8" width="26" height="32" rx="2" ${STROKE}/><path d="M16 17l2 2 4-4M16 27l2 2 4-4M25 17h7M25 28h7" ${STROKE}/>`,
   box: `<rect x="7" y="14" width="34" height="24" ${STROKE}/><path d="M7 21h34M24 14v7" ${STROKE}/>`,
   cylinder: `<path d="M17 8h14v28a7 7 0 0 1-14 0z" ${STROKE}/><path d="M17 16h6M17 22h6M17 28h6" ${STROKE}/>`,
   beaker: `<path d="M12 12v22a4 4 0 0 0 4 4h16a4 4 0 0 0 4-4V12" ${STROKE}/><path d="M12 12l-3-3M12 22h24" ${STROKE}/>`,
