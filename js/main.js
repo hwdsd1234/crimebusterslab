@@ -1,7 +1,7 @@
 (function (LAB) {
 'use strict';
 
-const { state, commit, resetBench, note, save, load, restoreBench, exportCsv } = LAB;
+const { state, commit, resetBench, note, save, load, restoreBench } = LAB;
 const { generateCase, DRILLS } = LAB;
 const { DEVICE_BY_ID } = LAB;
 const { renderShelf } = LAB;
@@ -272,14 +272,6 @@ $('#newCase').addEventListener('click', () => startCase(Math.floor(Math.random()
 $('#seedCase').addEventListener('click', () => {
   const seed = parseInt($('#seedInput').value, 10);
   if (!Number.isNaN(seed)) startCase(seed);
-});
-
-$('#exportCsv').addEventListener('click', () => {
-  const blob = new Blob([exportCsv()], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `crime-busters-lab-${state.seed || 'sandbox'}.csv`;
-  a.click();
 });
 
 // ───────────────────────── boot ─────────────────────────

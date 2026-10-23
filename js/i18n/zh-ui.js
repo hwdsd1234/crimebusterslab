@@ -15,7 +15,6 @@ const ZH_UI = {
   'seed': '种子',
   'Load seed': '载入种子',
   'Random case': '随机案件',
-  'Export log CSV': '导出记录 CSV',
   'Equipment set is the 2026 Division B Chemistry Lab Equipment List. Microscope, heat source, and balance are shown as event-provided — confirm against the current Rules Manual before treating them as team-supplied.': '器材取自 2026 年 B 组化学实验器材清单。显微镜、热源和天平标注为比赛现场提供——在把它们当作自备器材之前，请对照最新版规则手册确认。',
 
   // Session

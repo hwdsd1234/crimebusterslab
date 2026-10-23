@@ -238,15 +238,5 @@ function load() {
   } catch { return null; }
 }
 
-function exportCsv() {
-  const rows = [[t('unknown'), t('test'), t('observation'), t('reliable')]];
-  for (const [label, tests] of Object.entries(state.observations)) {
-    for (const [testId, r] of Object.entries(tests)) {
-      rows.push([label, t(TEST_NAMES[testId] || testId), observationText(r), r.valid ? t('yes') : t('no')]);
-    }
-  }
-  return rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-}
-
-Object.assign(LAB, { state: state, subscribe: subscribe, commit: commit, resetBench: resetBench, note: note, markTechnique: markTechnique, useTool: useTool, cleanTool: cleanTool, recordObservation: recordObservation, observationText: observationText, recordMeasurement: recordMeasurement, ppeComplete: ppeComplete, ppePoints: ppePoints, save: save, restoreBench: restoreBench, load: load, exportCsv: exportCsv });
+Object.assign(LAB, { state: state, subscribe: subscribe, commit: commit, resetBench: resetBench, note: note, markTechnique: markTechnique, useTool: useTool, cleanTool: cleanTool, recordObservation: recordObservation, observationText: observationText, recordMeasurement: recordMeasurement, ppeComplete: ppeComplete, ppePoints: ppePoints, save: save, restoreBench: restoreBench, load: load });
 })(window.LAB);
