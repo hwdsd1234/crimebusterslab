@@ -4,7 +4,7 @@
 const { DEVICES, EVENT_PROVIDED, HELPERS, GROUPS } = LAB;
 const { state } = LAB;
 const { svg } = LAB;
-const { ui } = LAB;
+const { ui, QUICK_TESTS } = LAB;
 const { t } = LAB;
 
 // A small badge on a tool tile for state the student should notice without opening
@@ -29,11 +29,27 @@ function badge(id) {
   return null;
 }
 
+// The tests themselves, most common first. Clicking one opens the tool that runs it,
+// already set up, so a student does not need to know which glassware a test uses.
+function testsGroup() {
+  return `<h2 class="shelf-title">${t('Tests')}</h2>
+  <p class="shelf-hint">${t('Most common first')}</p>
+  <div class="test-grid">${QUICK_TESTS.map((q, i) => {
+    const runs = q.id === 'ink' ? state.chromatograms.length
+      : q.id === 'density' ? Object.values(state.measurements).filter(m => m.mass != null).length
+      : Object.values(state.observations).filter(o => o[q.id]).length;
+    return `<button class="quick-test ${i < 3 ? 'top' : ''}" data-test="${q.id}">
+      <span class="device-icon">${svg.icon(q.icon)}</span><span>${t(q.label)}</span>
+      ${runs ? `<span class="badge ok">${runs}</span>` : ''}
+    </button>`;
+  }).join('')}</div>`;
+}
+
 function renderShelf(root) {
   const all = [...DEVICES, ...EVENT_PROVIDED, ...HELPERS];
   // The ID sheet is a sandbox practice aid, listed first so it is easy to find.
   const groups = state.mode === 'sandbox' ? [{ name: 'Practice', hint: 'Guess what each unknown is', ids: ['id_sheet'] }, ...GROUPS] : GROUPS;
-  root.innerHTML = `<h2 class="shelf-title">${t('Equipment')}</h2><div class="shelf-groups">` + groups.map(group => {
+  root.innerHTML = testsGroup() + `<h2 class="shelf-title">${t('Equipment')}</h2><div class="shelf-groups">` + groups.map(group => {
     const items = group.ids.map(id => all.find(d => d.id === id)).filter(Boolean);
     if (!items.length) return '';
     // A device with withDevice is listed under another one instead of getting its own

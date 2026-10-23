@@ -5,7 +5,7 @@ const { state, commit, resetBench, note, save, load, restoreBench } = LAB;
 const { generateCase, DRILLS } = LAB;
 const { DEVICE_BY_ID } = LAB;
 const { renderShelf } = LAB;
-const { STATIONS, ui, toggleAction, runAction, setParam, checkGuess, resetGuess } = LAB;
+const { STATIONS, ui, toggleAction, runAction, setParam, checkGuess, resetGuess, startTest, QUICK_TESTS } = LAB;
 const { renderQuestions, renderTechnique, renderCaseFile } = LAB;
 const { t, tb, getLang, setLang, syncDocumentLang } = LAB;
 
@@ -143,6 +143,15 @@ function startDrill(drill) {
 // ───────────────────────── wiring ─────────────────────────
 
 shelf.addEventListener('click', e => {
+  const test = e.target.closest('[data-test]');
+  if (test) {
+    const q = QUICK_TESTS.find(x => x.id === test.dataset.test);
+    if (!q) return;
+    openDevice(q.device);
+    startTest(q.id);
+    redraw();
+    return;
+  }
   const btn = e.target.closest('[data-device]');
   if (!btn) return;
   if (!DEVICE_BY_ID[btn.dataset.device]) return;

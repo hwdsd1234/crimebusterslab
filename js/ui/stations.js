@@ -14,7 +14,7 @@ const { t, tb } = LAB;
 
 const ui = {
   station: 'kit', device: 'kit_box', target: null, well: 'A1', inkId: null, solvent: 'water',
-  reagent: 'iodine', magnification: 40, cylinder: 10, view: 'eye', flaskMix: null,
+  reagent: 'water', magnification: 40, cylinder: 10, view: 'eye', flaskMix: null,
   open: null,        // the action whose choices are showing
   lastResult: [],    // log lines the last action produced, shown beside the menu
 };
@@ -569,6 +569,46 @@ function toggleAction(deviceId, actionId) {
   return false;
 }
 
+// ───────────────────────── quick tests ─────────────────────────
+
+// The tests in the order they come up in a case, most common first. Each one opens
+// the tool that runs it with that test already chosen, plus a line saying the steps.
+const QUICK_TESTS = [
+  { id: 'water', label: 'Water test', icon: 'dropper', device: 'spot_plate', reagent: 'water', steps: 'Put the evidence in a well, then add a drop of distilled water.' },
+  { id: 'vinegar', label: 'Vinegar test', icon: 'dropper', device: 'spot_plate', reagent: 'vinegar', steps: 'Put the evidence in a well, then add a drop of vinegar. Fizzing means a carbonate.' },
+  { id: 'iodine', label: 'Iodine test', icon: 'dropper', device: 'spot_plate', reagent: 'iodine', steps: 'Put the evidence in a well, then add a drop of iodine. Blue-black means starch.' },
+  { id: 'ph', label: 'pH test', icon: 'phpaper', device: 'ph', action: 'drop', steps: 'Put a drop on the pH paper with a clean rod. Never dip the paper.' },
+  { id: 'appearance', label: 'Look closely', icon: 'lens', device: 'hand_lens', action: 'look', steps: 'Look at the evidence under the hand lens.' },
+  { id: 'burn', label: 'Burn test', icon: 'flame', device: 'heat_source', action: 'burn', steps: 'Goggles on, hold a small piece in the tweezers and touch it to the flame.' },
+  { id: 'micro', label: 'Microscope', icon: 'microscope', device: 'slide', action: 'mount', steps: 'Mount the fibre or hair on a slide, add a cover slip, then look at 40×.' },
+  { id: 'ink', label: 'Ink test', icon: 'petri', device: 'pencil', action: 'pencil', steps: 'Draw a pencil baseline, develop a strip in the petri dish, then measure it with the ruler.' },
+  { id: 'conductivity', label: 'Conductivity', icon: 'conductivity', device: 'conductivity', action: 'test', steps: 'Lower the electrodes into the evidence. Rinse them between samples.' },
+  { id: 'density', label: 'Density', icon: 'balance', device: 'graduated_cylinder', action: 'displace', steps: 'Find the volume with the cylinder, then the mass on the zeroed balance.' },
+];
+
+// Call after the test's device is open: it picks the test's options and opens the
+// action that starts it, and returns the line of steps to show beside the menu.
+function startTest(testId) {
+  const q = QUICK_TESTS.find(x => x.id === testId);
+  if (!q) return null;
+  let action = q.action;
+  if (q.reagent) {
+    ui.reagent = q.reagent;
+    // A well that already holds evidence but no reagent is ready for the drop;
+    // otherwise pick an empty well and start by putting the evidence in it.
+    const ready = state.wells[ui.well]?.sample && !state.wells[ui.well]?.reagent;
+    if (!ready) ui.well = WELLS.find(w => !state.wells[w]?.sample) || ui.well;
+    action = ready ? 'drop' : 'put';
+  }
+  const act = actionsFor(q.device).find(a => a.id === action);
+  if (act?.params?.length) {
+    ui.open = action;
+    settleParams(act);
+  }
+  ui.lastResult = [{ text: t(q.steps), kind: 'info' }];
+  return q;
+}
+
 // ───────────────────────── ID sheet (sandbox) ─────────────────────────
 
 // Checks a guess for one unknown. A wrong guess is crossed off and the sheet says
@@ -757,7 +797,7 @@ const STATIONS = {
   },
 
   spot_plate: {
-    view: () => shell(t('Spot plate — semi-micro tests'), 'spot_plate', `
+    view: () => shell(t('Spot plate — water, vinegar & iodine tests'), 'spot_plate', `
       ${svg.spotPlateSvg(state.wells, ui.well)}
       ${wellReadout()}
       ${toolStates()}`,
@@ -942,5 +982,5 @@ const STATIONS = {
   },
 };
 
-Object.assign(LAB, { checkGuess: checkGuess, resetGuess: resetGuess, ui: ui, unknowns: unknowns, sampleFor: sampleFor, categoryFor: categoryFor, STATIONS: STATIONS, TOOLS: TOOLS, actionsFor: actionsFor, runAction: runAction, toggleAction: toggleAction, setParam: setParam, inkSource: inkSource, inkSources: inkSources });
+Object.assign(LAB, { QUICK_TESTS: QUICK_TESTS, startTest: startTest, checkGuess: checkGuess, resetGuess: resetGuess, ui: ui, unknowns: unknowns, sampleFor: sampleFor, categoryFor: categoryFor, STATIONS: STATIONS, TOOLS: TOOLS, actionsFor: actionsFor, runAction: runAction, toggleAction: toggleAction, setParam: setParam, inkSource: inkSource, inkSources: inkSources });
 })(window.LAB);

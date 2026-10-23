@@ -9,6 +9,16 @@
 .shelf-group h3 { margin-bottom: .15rem; }
 .shelf-hint { font-size: .72rem; color: var(--ink-soft); margin: 0 0 .4rem; }
 .provided-mark { color: var(--warn); font-size: .7rem; }
+.test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-bottom: 1rem; }
+.quick-test {
+  position: relative; display: flex; align-items: center; gap: .4rem;
+  padding: .4rem .5rem; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--panel-2); color: var(--ink); font: inherit; font-size: .76rem; font-weight: 600;
+  text-align: left; line-height: 1.2; cursor: pointer;
+}
+.quick-test .icon { width: 22px; height: 22px; display: block; }
+.quick-test:hover { border-color: var(--accent); background: #fff; }
+.quick-test.top { border-color: var(--accent); background: var(--accent-soft); }
 .device-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
 
 .device {

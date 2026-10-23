@@ -113,9 +113,9 @@ const DEVICE_BY_ID = Object.fromEntries([...DEVICES, ...EVENT_PROVIDED, ...HELPE
 // tests every unknown needs sit at the top and the rarer measurements sit below.
 const GROUPS = [
   { name: 'Safety first', ids: ['kit_box'] },
-  { name: 'Most common: spot plate tests', hint: 'Water, vinegar, iodine, pH', ids: ['spot_plate', 'dropper', 'spatula', 'stirring_rod', 'ph', 'hand_lens'] },
-  { name: 'Common: burn, microscope, ink', hint: 'Fibres, hair, chromatography', ids: ['heat_source', 'tweezers', 'slide', 'microscope', 'petri_dish', 'pencil', 'ruler', 'beaker'] },
-  { name: 'Less common: conductivity, density', hint: 'Salts, metals, glass, plastic', ids: ['conductivity', 'balance', 'graduated_cylinder', 'test_tube', 'test_tube_holder', 'test_tube_rack', 'erlenmeyer'] },
+  { name: 'For water, vinegar, iodine & pH tests', hint: 'The spot plate is a small dish with little wells for tiny test amounts', ids: ['spot_plate', 'dropper', 'spatula', 'stirring_rod', 'ph', 'hand_lens'] },
+  { name: 'For burn, microscope & ink tests', hint: 'Fibres, hair, ink', ids: ['heat_source', 'tweezers', 'slide', 'microscope', 'petri_dish', 'pencil', 'ruler', 'beaker'] },
+  { name: 'For conductivity & density tests', hint: 'Salts, metals, glass, plastic', ids: ['conductivity', 'balance', 'graduated_cylinder', 'test_tube', 'test_tube_holder', 'test_tube_rack', 'erlenmeyer'] },
   { name: 'Clean-up', ids: ['paper_towels', 'test_tube_brush'] },
 ];
 const CHECK_LABELS = Object.fromEntries([...DEVICES, ...EVENT_PROVIDED].flatMap(d => (d.checks || []).map(c => [c.id, c.label])));
