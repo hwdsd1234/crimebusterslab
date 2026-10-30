@@ -320,6 +320,18 @@ $('#difficulty').addEventListener('click', e => {
   save();
 });
 
+// Reset starts the current mode over: a clean sandbox bench, empty beakers, the
+// same drill from the top, or the same case with no tests run and no answers.
+$('#resetMode').addEventListener('click', () => {
+  const what = { sandbox: 'Sandbox', chem: 'Chem Lab', drill: 'Drill', case: 'Case' }[state.mode] || 'Sandbox';
+  if (!window.confirm(t('Reset the {mode}? Everything on the bench, your PPE and your answers are cleared.', { mode: t(what) }))) return;
+  if (state.mode === 'chem') startChem();
+  else if (state.mode === 'drill') startDrill(state.activeDrill || DRILLS[0]);
+  else if (state.mode === 'case' && state.seed != null) startCase(state.seed);
+  else startSandbox();
+  save();
+});
+
 $('#newCase').addEventListener('click', () => startCase(Math.floor(Math.random() * 1e9)));
 
 $('#seedCase').addEventListener('click', () => {

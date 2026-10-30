@@ -76,6 +76,7 @@ function resetBench() {
   state.guesses = {};
   state.notes = { marks: {}, text: '' };
   state.tools = freshTools();
+  state.ppe = Object.fromEntries(PPE.map(p => [p.id, false]));
   state.clock = { startedAt: Date.now(), elapsedMs: 0 };
   commit();
 }
