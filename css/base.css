@@ -152,3 +152,4 @@ button { font: inherit; }
   .casefile { position: static; max-height: none; }
   .topbar-tools { margin-left: 0; }
 }
+[hidden] { display: none !important; }

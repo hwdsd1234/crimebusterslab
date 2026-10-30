@@ -207,6 +207,7 @@ function save() {
         burnResults: state.burnResults, retrieved: state.retrieved,
         technique: state.technique, tools: state.tools, log: state.log,
         volumeMeasures: state.volumeMeasures, chromaPrep: state.chromaPrep, notes: state.notes, guesses: state.guesses,
+        chem: state.chem || null,
       },
     }));
   } catch { /* storage unavailable — the lab still runs in memory */ }
@@ -228,6 +229,7 @@ function restoreBench(bench) {
   state.volumeMeasures = bench.volumeMeasures || null;
   state.chromaPrep = bench.chromaPrep || { baseline: null };
   state.guesses = bench.guesses || {};
+  if (bench.chem) state.chem = bench.chem;
   state.notes = { marks: {}, text: '', ...(bench.notes || {}) };
   state.log = bench.log || [];
   commit();

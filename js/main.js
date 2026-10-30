@@ -35,12 +35,22 @@ function applyStaticText() {
 
 function redraw() {
   applyStaticText();
-  renderShelf(shelf);
-  const def = STATIONS[ui.station] || STATIONS.kit;
-  stage.innerHTML = def.view();
-  renderCaseFile($('#casefile'));
-  renderTechnique($('#technique'));
-  renderQuestions($('#questions'));
+  // The chem lab has its own shelf, bench and side panel, and nothing to score.
+  const chemMode = state.mode === 'chem';
+  $('#questions').hidden = chemMode;
+  $('#technique').hidden = chemMode;
+  if (chemMode) {
+    LAB.renderChemShelf(shelf);
+    LAB.renderChemBench(stage);
+    LAB.renderChemSide($('#casefile'));
+  } else {
+    renderShelf(shelf);
+    const def = STATIONS[ui.station] || STATIONS.kit;
+    stage.innerHTML = def.view();
+    renderCaseFile($('#casefile'));
+    renderTechnique($('#technique'));
+    renderQuestions($('#questions'));
+  }
   renderScoreChip();
   renderModeBar();
   renderLangBar();
@@ -105,6 +115,16 @@ function startCase(seed) {
   redraw();
 }
 
+function startChem() {
+  state.mode = 'chem';
+  state.case = null;
+  state.unknowns = [];
+  resetBench();
+  state.chem = LAB.freshChem();
+  note(t('Chem Lab: pick any chemical and mix it in a beaker'), 'good');
+  redraw();
+}
+
 function startSandbox() {
   state.mode = 'sandbox';
   state.case = null;
@@ -143,6 +163,10 @@ function startDrill(drill) {
 // ───────────────────────── wiring ─────────────────────────
 
 shelf.addEventListener('click', e => {
+  if (state.mode === 'chem') {
+    if (LAB.handleChemClick(e)) { save(); redraw(); }
+    return;
+  }
   const test = e.target.closest('[data-test]');
   if (test) {
     const q = QUICK_TESTS.find(x => x.id === test.dataset.test);
@@ -159,9 +183,18 @@ shelf.addEventListener('click', e => {
   redraw();
 });
 
+// The chem lab's search box filters in place: a redraw would drop the caret.
+shelf.addEventListener('input', e => {
+  if (e.target.id === 'chemSearch') LAB.filterChemShelf(shelf, e.target.value);
+});
+
 // Stage clicks: a well in the drawing, an action in the tool menu, a choice chip, or
 // the button that carries an action out with the chosen options.
 stage.addEventListener('click', e => {
+  if (state.mode === 'chem') {
+    if (LAB.handleChemClick(e)) { save(); redraw(); }
+    return;
+  }
   const guess = e.target.closest('[data-guess]');
   if (guess) {
     const pick = stage.querySelector(`[data-guess-for="${guess.dataset.guess}"]`)?.value;
@@ -260,6 +293,7 @@ document.querySelectorAll('[data-mode]').forEach(btn => {
   btn.addEventListener('click', () => {
     const mode = btn.dataset.mode;
     if (mode === 'sandbox') startSandbox();
+    if (mode === 'chem') startChem();
     if (mode === 'case') startCase(Math.floor(Math.random() * 1e9));
     if (mode === 'drill') startDrill(DRILLS[0]);
   });
@@ -299,7 +333,8 @@ syncDocumentLang();
 
 const saved = load();
 if (saved?.difficulty) state.difficulty = saved.difficulty;
-if (saved?.mode === 'case' && saved.seed) startCase(saved.seed);
+if (saved?.mode === 'chem') startChem();
+else if (saved?.mode === 'case' && saved.seed) startCase(saved.seed);
 else if (saved?.mode === 'drill') startDrill(DRILLS.find(d => d.id === saved.drillId) || DRILLS[0]);
 else startSandbox();
 
