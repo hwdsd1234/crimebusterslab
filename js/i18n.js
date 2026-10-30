@@ -5,8 +5,8 @@
 // tokens, sample ids and question answers are never translated, so switching
 // language is a re-render and never a reset.
 //
-// 'both' is the default — the event is run in English, so students need the
-// English term and the Chinese one on the same screen.
+// English is the default, since the event is run in English; 'both' puts the
+// English term and the Chinese one on the same screen for students who want it.
 
 const { ZH_UI } = LAB;
 const { ZH_DEVICES } = LAB;
@@ -15,12 +15,12 @@ const { ZH_BIO } = LAB;
 const { ZH_CASE } = LAB;
 const { ZH_SIM } = LAB;
 
-const LANGS = ['both', 'en', 'zh'];
+const LANGS = ['en', 'both', 'zh'];
 const STORAGE_KEY = 'cb-lab-lang';
 
 const ZH = Object.assign({}, ZH_UI, ZH_DEVICES, ZH_SAMPLES, ZH_BIO, ZH_CASE, ZH_SIM);
 
-let lang = 'both';
+let lang = 'en';
 try {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (LANGS.includes(saved)) lang = saved;
