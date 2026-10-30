@@ -272,9 +272,30 @@ $('#questions').addEventListener('input', e => {
   if (recordAnswer(el)) renderScoreChip();
 });
 
+// A destructive button asks for a second click instead of a browser pop-up: Chrome
+// can be told to block a page's pop-ups, and then confirm() silently answers "no".
+// The first click relabels the button; a second click within four seconds goes ahead.
+function confirmed(btn, label) {
+  if (btn.dataset.armed && Date.now() - Number(btn.dataset.armed) < 4000) {
+    disarm(btn);
+    return true;
+  }
+  btn.dataset.armed = String(Date.now());
+  btn.dataset.label = btn.textContent;
+  btn.textContent = label;
+  btn.classList.add('armed');
+  setTimeout(() => { if (btn.dataset.armed) disarm(btn); }, 4000);
+  return false;
+}
+function disarm(btn) {
+  delete btn.dataset.armed;
+  if (btn.dataset.label) btn.textContent = btn.dataset.label;
+  btn.classList.remove('armed');
+}
+
 $('#questions').addEventListener('click', e => {
   if (e.target.id !== 'submitReport' || state.submitted) return;
-  if (!window.confirm(t('Submit the report? Your answers are locked once it is graded.'))) return;
+  if (!confirmed(e.target, t('Click again to submit — answers lock'))) return;
   state.submitted = true;
   note(t('Report submitted'), 'good');
   save();
@@ -313,7 +334,7 @@ $('#difficulty').addEventListener('click', e => {
   const btn = e.target.closest('[data-difficulty]');
   if (!btn || btn.dataset.difficulty === state.difficulty) return;
   const busy = state.mode === 'case' && (Object.keys(state.observations).length || Object.keys(state.answers).length);
-  if (busy && !window.confirm(t('Changing the difficulty restarts this case and clears the bench. Continue?'))) return;
+  if (busy && !confirmed(btn, t('Click again — restarts the case'))) return;
   state.difficulty = btn.dataset.difficulty;
   if (state.mode === 'case') startCase(state.seed);
   else redraw();
@@ -322,9 +343,8 @@ $('#difficulty').addEventListener('click', e => {
 
 // Reset starts the current mode over: a clean sandbox bench, empty beakers, the
 // same drill from the top, or the same case with no tests run and no answers.
-$('#resetMode').addEventListener('click', () => {
-  const what = { sandbox: 'Sandbox', chem: 'Chem Lab', drill: 'Drill', case: 'Case' }[state.mode] || 'Sandbox';
-  if (!window.confirm(t('Reset the {mode}? Everything on the bench, your PPE and your answers are cleared.', { mode: t(what) }))) return;
+$('#resetMode').addEventListener('click', e => {
+  if (!confirmed(e.currentTarget, t('Click again to reset'))) return;
   if (state.mode === 'chem') startChem();
   else if (state.mode === 'drill') startDrill(state.activeDrill || DRILLS[0]);
   else if (state.mode === 'case' && state.seed != null) startCase(state.seed);

@@ -4,9 +4,9 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Crime Busters Virtual Lab</title>
-<link rel="stylesheet" href="css/base.css"/>
-<link rel="stylesheet" href="css/bench.css"/>
-<link rel="stylesheet" href="css/apparatus.css"/>
+<link rel="stylesheet" href="css/base.css?v=20261030a"/>
+<link rel="stylesheet" href="css/bench.css?v=20261030a"/>
+<link rel="stylesheet" href="css/apparatus.css?v=20261030a"/>
 </head>
 <body>
 
@@ -59,30 +59,32 @@
 <!-- Plain scripts sharing one window.LAB namespace, so the page runs straight off
      the filesystem with no server. Order matters: each file reads what earlier
      files put on LAB. -->
+<!-- Every script and stylesheet carries ?v=: bump it on each release so browsers
+     drop their cached copies (GitHub Pages lets them keep files for ten minutes). -->
 <script>window.LAB = {};</script>
-<script src="js/i18n/zh-ui.js"></script>
-<script src="js/i18n/zh-devices.js"></script>
-<script src="js/i18n/zh-samples.js"></script>
-<script src="js/i18n/zh-bio.js"></script>
-<script src="js/i18n/zh-case.js"></script>
-<script src="js/i18n/zh-sim.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/data/samples.js"></script>
-<script src="js/data/biology.js"></script>
-<script src="js/data/materials.js"></script>
-<script src="js/data/inks.js"></script>
-<script src="js/data/case-text.js"></script>
-<script src="js/engine/devices.js"></script>
-<script src="js/engine/svg.js"></script>
-<script src="js/engine/model.js"></script>
-<script src="js/engine/state.js"></script>
-<script src="js/engine/scoring.js"></script>
-<script src="js/engine/generator.js"></script>
-<script src="js/ui/stations.js"></script>
-<script src="js/ui/shelf.js"></script>
-<script src="js/ui/panels.js"></script>
-<script src="js/ui/casefile.js"></script>
-<script src="js/ui/chemlab.js"></script>
-<script src="js/main.js"></script>
+<script src="js/i18n/zh-ui.js?v=20261030a"></script>
+<script src="js/i18n/zh-devices.js?v=20261030a"></script>
+<script src="js/i18n/zh-samples.js?v=20261030a"></script>
+<script src="js/i18n/zh-bio.js?v=20261030a"></script>
+<script src="js/i18n/zh-case.js?v=20261030a"></script>
+<script src="js/i18n/zh-sim.js?v=20261030a"></script>
+<script src="js/i18n.js?v=20261030a"></script>
+<script src="js/data/samples.js?v=20261030a"></script>
+<script src="js/data/biology.js?v=20261030a"></script>
+<script src="js/data/materials.js?v=20261030a"></script>
+<script src="js/data/inks.js?v=20261030a"></script>
+<script src="js/data/case-text.js?v=20261030a"></script>
+<script src="js/engine/devices.js?v=20261030a"></script>
+<script src="js/engine/svg.js?v=20261030a"></script>
+<script src="js/engine/model.js?v=20261030a"></script>
+<script src="js/engine/state.js?v=20261030a"></script>
+<script src="js/engine/scoring.js?v=20261030a"></script>
+<script src="js/engine/generator.js?v=20261030a"></script>
+<script src="js/ui/stations.js?v=20261030a"></script>
+<script src="js/ui/shelf.js?v=20261030a"></script>
+<script src="js/ui/panels.js?v=20261030a"></script>
+<script src="js/ui/casefile.js?v=20261030a"></script>
+<script src="js/ui/chemlab.js?v=20261030a"></script>
+<script src="js/main.js?v=20261030a"></script>
 </body>
 </html>

@@ -153,3 +153,4 @@ button { font: inherit; }
   .topbar-tools { margin-left: 0; }
 }
 [hidden] { display: none !important; }
+.btn.armed, .topbar .btn.armed, .lang-switch button.armed { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 700; }
