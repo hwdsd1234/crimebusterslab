@@ -30,7 +30,7 @@
   cursor: pointer; font-size: .7rem; line-height: 1.2;
   transition: transform .1s, border-color .12s, background .12s;
 }
-.device:hover { border-color: var(--accent); background: #fff; transform: translateY(-1px); }
+.device:hover { border-color: var(--accent); background: #fff; }
 .device.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
 .device-icon { color: var(--ink-soft); }
 .device.active .device-icon { color: var(--accent); }

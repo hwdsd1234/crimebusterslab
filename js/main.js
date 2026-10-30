@@ -363,6 +363,14 @@ $('#seedCase').addEventListener('click', () => {
 
 syncDocumentLang();
 
+// The top bar wraps to two rows on narrower screens and in EN+中文. The side panels
+// stick just below it, so they read its real height; a fixed guess let their top
+// buttons slide under the bar, where only half of each button took clicks.
+const topbar = $('.topbar');
+const fitTopbar = () => document.documentElement.style.setProperty('--top', `${topbar.offsetHeight}px`);
+new ResizeObserver(fitTopbar).observe(topbar);
+fitTopbar();
+
 const saved = load();
 if (saved?.difficulty) state.difficulty = saved.difficulty;
 if (saved?.mode === 'chem') startChem();
